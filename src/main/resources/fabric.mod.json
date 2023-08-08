@@ -3,10 +3,11 @@
   "id": "modid",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Tungsten",
+  "description": "A path finding bot",
   "authors": [
-    "Me!"
+    "Miran",
+    "KaptainWutax"
   ],
   "contact": {
     "homepage": "https://fabricmc.net/",
@@ -19,7 +20,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "kaptainwutax.tungsten.TungstenMod"
+      "me.miran.Main"
     ]
   },
   "mixins": [
