@@ -18,6 +18,8 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.TagKey;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
@@ -670,6 +672,7 @@ public class Agent {
 
         double magnitudeSq = ajuX * ajuX + ajuY * ajuY + ajuZ * ajuZ;
 
+        //TODO add damage velocity check
 		if(magnitudeSq > 0.0000001D) {
             if(this.fallDistance != 0.0F && magnitudeSq >= 1.0D) {
                 RaycastContext context = new AgentRaycastContext(this.getPos(), this.getPos().add(new Vec3d(ajuX, ajuY, ajuZ)),
@@ -688,7 +691,8 @@ public class Agent {
         boolean xSimilar = !MathHelper.approximatelyEquals(movX, ajuX);
         boolean zSimilar = !MathHelper.approximatelyEquals(movZ, ajuZ);
         this.horizontalCollision = xSimilar || zSimilar;
-        this.verticalCollision = movY != ajuY;
+        this.verticalCollision = !MathHelper.approximatelyEquals(movY, ajuY);
+
         this.collidedSoftly = this.horizontalCollision && this.hasCollidedSoftly(ajuX, ajuY, ajuZ);
         this.onGround = this.verticalCollision && movY < 0.0D;
 
@@ -1014,15 +1018,15 @@ public class Agent {
                         } else if(state.getBlock() instanceof AbstractPressurePlateBlock) {
                             //change block state
                         } else if(state.getBlock() instanceof BubbleColumnBlock) {
-                            BlockState surface = world.getBlockState(pos.up());
+                            BlockState surface = world.getBlockState(pos);
                             boolean drag = surface.get(BubbleColumnBlock.DRAG);
 
                             if(surface.isAir()) {
                                 this.velY = drag ? Math.max(-0.9D, this.velY - 0.03D) : Math.min(1.8D, this.velY + 0.1D);
                             } else {
                                 this.velY = drag ? Math.max(-0.3D, this.velY - 0.03D) : Math.min(0.7D, this.velY + 0.06D);
-                                this.fallDistance = 0.0F;
                             }
+                            fallDistance = 0;
                         } else if(state.getBlock() instanceof CactusBlock) {
                             //damage the entity
                         } else if(state.getBlock() instanceof CampfireBlock) {
@@ -1051,6 +1055,7 @@ public class Agent {
                             //eh?
                         } else if(state.getBlock() instanceof SweetBerryBushBlock) {
                             this.mulX = 0.8f; this.mulY = 0.75D; this.mulZ = 0.8F;
+                            this.fallDistance = 0;
                             //damage the entity
                         } else if(state.getBlock() instanceof TripwireBlock) {
                             //change block state
@@ -1266,7 +1271,7 @@ public class Agent {
     }
     */
 
-    public void compare(ClientPlayerEntity player, boolean executor) {
+    public boolean compare(ClientPlayerEntity player, boolean executor) {
         List<String> values = new ArrayList<>();
 
         if(this.posX != player.getX() || this.posY != player.getY() || this.posZ != player.getZ()) {
@@ -1380,9 +1385,13 @@ public class Agent {
         }
 
         if(!values.isEmpty()) {
-            System.out.println("Tick " + player.age + " ===========================================");
-            values.forEach(System.out::println);
+            player.sendMessage(Text.literal("Tick " + player.age + " ===========================================").formatted(Formatting.RED));
+            values.forEach(v -> player.sendMessage(Text.literal(v).formatted(Formatting.RED)));
+
+            return false;
         }
+
+        return true;
     }
 
     public static Agent of(ClientPlayerEntity player) {

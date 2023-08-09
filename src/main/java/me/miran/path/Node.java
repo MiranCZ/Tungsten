@@ -47,19 +47,36 @@ public class Node {
 			return new Node[] {};
 		}
 
-		if(this.agent.onGround || this.agent.touchingWater) {
+		 if(this.agent.onGround || this.agent.touchingWater) {
 			return new Node[] {
-				new Node(this, world, new PathInput(true, false, false, false, true,
+					new Node(this, world, new PathInput(false, false, false, false, false,
+							false, false, this.agent.pitch, this.agent.yaw), new Color(0, 0, 0), this.pathCost + 1),
+					new Node(this, world, new PathInput(true, false, false, false, true,
 					false, true, this.agent.pitch, this.agent.yaw), new Color(0, 255, 0), this.pathCost + 1),
+					new Node(this, world, new PathInput(true, false, false, false, true,
+							false, false, this.agent.pitch, this.agent.yaw), new Color(0, 255, 0), this.pathCost + 1),
 				new Node(this, world, new PathInput(true, false, false, false, false,
 					false, true, this.agent.pitch, this.agent.yaw), new Color(255, 0, 0), this.pathCost + 1),
+					new Node(this, world, new PathInput(true, false, false, false, false,
+							false, false, this.agent.pitch, this.agent.yaw), new Color(255, 0, 0), this.pathCost + 1),
 				new Node(this, world, new PathInput(true, false, false, false, false,
 					false, true, this.agent.pitch, this.agent.yaw + 90.0F), new Color(255, 255, 0), this.pathCost + 1),
 				new Node(this, world, new PathInput(true, false, false, false, false,
 					false, true, this.agent.pitch, this.agent.yaw - 90.0F), new Color(255, 0, 255), this.pathCost + 1),
+
+					new Node(this, world, new PathInput(true, false, false, false, false,
+							false, true, this.agent.pitch, this.agent.yaw + 45.0F), new Color(255, 0, 255), this.pathCost + 1),
+					new Node(this, world, new PathInput(true, false, false, false, false,
+							false, true, this.agent.pitch, this.agent.yaw - 45.0F), new Color(255, 0, 255), this.pathCost + 1),
+					new Node(this, world, new PathInput(true, false, false, false, false,
+							false, true, this.agent.pitch, this.agent.yaw + 20.0F), new Color(255, 0, 255), this.pathCost + 1),
+					new Node(this, world, new PathInput(true, false, false, false, false,
+							false, true, this.agent.pitch, this.agent.yaw - 20.0F), new Color(255, 0, 255), this.pathCost + 1),
 			};
 		} else {
 			return new Node[] {
+					/*new Node(this, world, new PathInput(false, false, false, false, false,
+							false, false, this.agent.pitch, this.agent.yaw), new Color(0, 0, 0), this.pathCost + 1),*/
 				new Node(this, world, new PathInput(true, false, false, false, false,
 					false, true, this.agent.pitch, this.agent.yaw), new Color(0, 255, 255), this.pathCost + 1),
 			};

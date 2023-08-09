@@ -11,11 +11,9 @@
     "AccessorLivingEntity",
     "MixinMinecraftClient",
     "MixinClientPlayerEntity",
-    "MixinClientPlayerInteractionManager",
     "MixinDebugRenderer",
     "MixinShapeContext",
     "MixinClientPlayNetworkHandler",
-    "MixinWorldChunk",
     "MixinMinecraftClient"
   ],
   "injectors": {

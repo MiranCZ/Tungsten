@@ -1,7 +1,10 @@
 package me.miran.path;
 
+import me.miran.Main;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import java.util.List;
 
@@ -25,18 +28,18 @@ public class PathExecutor {
 
     public void tick(ClientPlayerEntity player, GameOptions options) {
     	if(this.tick == this.path.size()) {
-		    options.forwardKey.setPressed(false);
-		    options.backKey.setPressed(false);
-		    options.leftKey.setPressed(false);
-		    options.rightKey.setPressed(false);
-		    options.jumpKey.setPressed(false);
-		    options.sneakKey.setPressed(false);
-		    options.sprintKey.setPressed(false);
+		    end(options);
 	    } else {
 		    Node node = this.path.get(this.tick);
 
 		    if(this.tick != 0) {
-			    this.path.get(this.tick - 1).agent.compare(player, true);
+			   if (!this.path.get(this.tick - 1).agent.compare(player, true)) {
+				   this.path.clear();
+				   end(options);
+				   player.sendMessage(Text.literal("Something went wrong... recalculating path!").formatted(Formatting.AQUA));
+				   Main.startPathing = true;
+				   return;
+			   }
 		    }
 
 		    if(node.input != null) {
@@ -56,5 +59,15 @@ public class PathExecutor {
 
 	    this.tick++;
     }
+
+	private void end(GameOptions options) {
+		options.forwardKey.setPressed(false);
+		options.backKey.setPressed(false);
+		options.leftKey.setPressed(false);
+		options.rightKey.setPressed(false);
+		options.jumpKey.setPressed(false);
+		options.sneakKey.setPressed(false);
+		options.sprintKey.setPressed(false);
+	}
 
 }
