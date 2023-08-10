@@ -7,6 +7,7 @@ import me.miran.render.Line;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldView;
@@ -22,6 +23,7 @@ public class PathFinder {
 		if(searchThread != null)return;
 		shouldStop = false;
 
+		blockLimit = 10;
 		searchThread = new Thread(() -> {
 			try {
 				search(world, target);
@@ -34,6 +36,8 @@ public class PathFinder {
 		});
 		searchThread.start();
 	}
+
+	private static int blockLimit;
 
 	private static void search(WorldView world, Vec3d target) {
 		Main.RENDERERS.clear();
@@ -48,7 +52,7 @@ public class PathFinder {
 
 		Node start = new Node(null, Agent.of(player), null, 0);
 
-		Queue<Node> open = new PriorityQueue<>(Comparator.comparingDouble(o -> o.pathCost + o.heuristic));
+		Queue<Node> open = new PriorityQueue<>(Comparator.comparingDouble(o -> o.heuristic));
 		Set<Vec3d> closed = new HashSet<>();
 
 		open.add(start);
@@ -84,7 +88,9 @@ public class PathFinder {
 
 			for(Node child : next.getChildren(world)) {
 				if(closed.contains(child.agent.getPos()))continue;
-				double heuristic = 20.0D * child.agent.getPos().distanceTo(target);
+				//double heuristic = 20.0D * child.agent.getPos().distanceTo(target);
+				double heuristic = child.pathCost / child.agent.getPos().distanceTo(start.agent.getPos()) * child.agent.getPos().distanceTo(target);
+
 
 				if (child.agent.onGround) {
 					BlockPos pos = new BlockPos(child.agent.blockX,child.agent.blockY,child.agent.blockZ);
@@ -94,20 +100,14 @@ public class PathFinder {
 						repeatingPos = pos;
 						repeatedTimes = repeat;
 					}
-					if (repeat > 1000) {//randomly chosen limit to prevent it getting stuck, TODO make this more complex in the future
+
+					if (repeat > blockLimit) {
 						set.add(pos);
 					}
 					if (set.contains(pos)) continue;
 
-					/*for (BlockPos p : set) {
-						heuristic -= dist(child.agent.getPos(), p) * map.get(p)/(repeatedTimes/2d);
-						if(dist(target,p) > dist(target,pos)) {
-							heuristic -= 10;
-						}
-					}*/
 				}
 
-				//child.heuristic = child.pathCost / child.agent.getPos().distanceTo(start.agent.getPos()) * child.agent.getPos().distanceTo(target);
 
 				if (child.agent.touchingWater) {
 					heuristic = Integer.MAX_VALUE;//we hate water
@@ -125,7 +125,22 @@ public class PathFinder {
 				Main.RENDERERS.add(new Line(child.agent.getPos(), child.parent.agent.getPos(), child.color));
 			}
 
-			System.out.println(repeatedTimes);
+			System.out.println(set.size());
+			if (set.size() > 250) {
+				if (blockLimit == 200) {
+					blockLimit = 1000;
+				} else if (blockLimit == 50) {
+					blockLimit = 200;
+				} else if (blockLimit == 10) {
+					blockLimit = 50;
+				}
+
+				set.clear();
+
+				player.sendMessage(Text.literal("Limit too low, recalculating with " + blockLimit).formatted(Formatting.DARK_AQUA));
+				search(world, target);
+				return;
+			}
 
 		}
 		List<Integer> list = new ArrayList<>(map.values().stream().toList());
@@ -134,11 +149,5 @@ public class PathFinder {
 		player.sendMessage(Text.literal(list.subList(list.size()-10,list.size()).toString()));
 	}
 
-	private static double dist(Vec3d v, BlockPos pos) {
-		double d = v.x - pos.getX();
-		double e = v.y - pos.getY();
-		double f = v.z - pos.getZ();
-		return Math.sqrt(d * d + e * e + f * f);
-	}
 
 }
