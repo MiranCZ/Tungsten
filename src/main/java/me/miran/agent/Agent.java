@@ -1271,7 +1271,7 @@ public class Agent {
     }
     */
 
-    public boolean compare(ClientPlayerEntity player, boolean executor) {
+    public boolean compare(ClientPlayerEntity player, boolean sendMessage) {
         List<String> values = new ArrayList<>();
 
         if(this.posX != player.getX() || this.posY != player.getY() || this.posZ != player.getZ()) {
@@ -1385,8 +1385,10 @@ public class Agent {
         }
 
         if(!values.isEmpty()) {
-            player.sendMessage(Text.literal("Tick " + player.age + " ===========================================").formatted(Formatting.RED));
-            values.forEach(v -> player.sendMessage(Text.literal(v).formatted(Formatting.RED)));
+            if (sendMessage) {
+                player.sendMessage(Text.literal("Tick " + player.age + " ===========================================").formatted(Formatting.RED));
+                values.forEach(v -> player.sendMessage(Text.literal(v).formatted(Formatting.RED)));
+            }
 
             return false;
         }

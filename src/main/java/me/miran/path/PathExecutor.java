@@ -26,6 +26,8 @@ public class PathExecutor {
         return this.path != null && this.tick <= this.path.size();
     }
 
+
+
     public void tick(ClientPlayerEntity player, GameOptions options) {
     	if(this.tick == this.path.size()) {
 		    end(options);
@@ -33,14 +35,17 @@ public class PathExecutor {
 		    Node node = this.path.get(this.tick);
 
 		    if(this.tick != 0) {
-			   if (!this.path.get(this.tick - 1).agent.compare(player, true)) {
-				   this.path.clear();
+
+			   if (!this.path.get(this.tick - 1).agent.compare(player, false)) {
+
 				   end(options);
 				   player.sendMessage(Text.literal("Something went wrong... recalculating path!").formatted(Formatting.AQUA));
-				   Main.startPathing = true;
+				   //Main.startPathing = true;
+				   PathFinder.calculateContinuedPathWithMismatch(player.getWorld(),path,tick);
 				   return;
 			   }
 		    }
+
 
 		    if(node.input != null) {
 			    options.forwardKey.setPressed(node.input.forward);

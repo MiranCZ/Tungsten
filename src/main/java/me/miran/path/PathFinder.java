@@ -26,9 +26,10 @@ public class PathFinder {
 		shouldStop = false;
 
 		blockLimit = 10;
+		neededDist = 1;
 		searchThread = new Thread(() -> {
 			try {
-				Main.EXECUTOR.setPath(search(world, target));
+				Main.EXECUTOR.setPath(search(world, target,new Node(null, Agent.of(Objects.requireNonNull(MinecraftClient.getInstance().player)), null, 0)));
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -40,8 +41,9 @@ public class PathFinder {
 	}
 
 	private static int blockLimit;
+	private static double neededDist;
 
-	private static List<Node> search(WorldView world, Vec3d target) {
+	private static List<Node> search(WorldView world, Vec3d target, Node start) {
 		Main.RENDERERS.clear();
 		List<Node> path = null;
 
@@ -50,7 +52,7 @@ public class PathFinder {
 
 		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 
-		Node start = new Node(null, Agent.of(player), null, 0);
+		//Node start = new Node(null, Agent.of(player), null, 0);
 
 		Queue<Node> open = new PriorityQueue<>(Comparator.comparingDouble(o -> o.pathCost+ o.heuristic));
 		Set<Vec3d> closed = new HashSet<>();
@@ -67,7 +69,7 @@ public class PathFinder {
 			if(closed.size() > 1_000_000)break;
 
 
-			if(next.agent.getPos().squaredDistanceTo(target) <= 1.0D && next.agent.onGround) {
+			if(next.agent.getPos().squaredDistanceTo(target) <= neededDist && next.agent.onGround) {
 				path = new ArrayList<>();
 				Main.RENDERERS.clear();
 				Node n = next;
@@ -123,9 +125,9 @@ public class PathFinder {
 				Main.RENDERERS.add(new Line(child.agent.getPos(), child.parent.agent.getPos(), child.color));
 			}
 
-			System.out.println(set.size());
+			//System.out.println(set.size());
 			if (set.size() > 250) {
-				path = recalculatePathWithHigherBlockLimit(player,world,target);
+				path = recalculatePathWithHigherBlockLimit(player,world,target,start);
 			}
 
 
@@ -133,25 +135,17 @@ public class PathFinder {
 
 		if (path == null) {
 			if (blockLimit < 1000) {
-				path = recalculatePathWithHigherBlockLimit(player,world,target);
+				path = recalculatePathWithHigherBlockLimit(player,world,target,start);
 			} else {
+				player.sendMessage(Text.literal("Wasn't able to find a path... sorry :(").formatted(Formatting.DARK_RED));
 				path = new ArrayList<>();
 			}
 		}
 
-		List<Integer> list = new ArrayList<>(map.values().stream().toList());
-		Collections.sort(list);
-		int ind = list.size()-10;
-		if (list.size() < 10) {
-			ind = list.size();
-		}
-
-		player.sendMessage(Text.literal(list.subList(ind,list.size()).toString()));
-
 		return path;
 	}
 
-	private static List<Node> recalculatePathWithHigherBlockLimit(PlayerEntity player,WorldView world, Vec3d target){
+	private static List<Node> recalculatePathWithHigherBlockLimit(PlayerEntity player,WorldView world, Vec3d target,Node start){
 		if (blockLimit == 200) {
 			blockLimit = 1000;
 		} else if (blockLimit == 50) {
@@ -162,7 +156,69 @@ public class PathFinder {
 
 
 		player.sendMessage(Text.literal("Limit too low, recalculating with " + blockLimit).formatted(Formatting.DARK_AQUA));
-		return search(world, target);
+		return search(world, target,start);
+	}
+
+	public static void calculateContinuedPathWithMismatch(WorldView world,final List<Node> path, int tick) {
+		neededDist = 5;
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+
+				ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
+				Node expectedStart = new Node(null, Agent.of(player), Color.WHITE, 0);
+
+				Node start = new Node(null, Agent.of(player), Color.WHITE, 0);
+
+				Node lastNode = null;
+				List<Node> path2 = path.subList(tick, path.size());//remove already executed nodes
+
+
+
+				for (int i = 0;i < path2.size();) {
+					Node a = path2.get(path2.size()-1);
+					Node lastGround = null;
+					for (Node node : path2.subList(i,path2.size())) {
+						if (node.agent.getPos().distanceTo(start.agent.getPos()) > 10 && lastGround != null) {
+							a = lastGround;
+							break;
+						}
+						if (node.agent.onGround) {
+							lastGround = node;
+						}
+					}
+					i = path2.indexOf(a)+1;
+
+
+					List<Node> l = search(world, a.agent.getPos(),start);
+					lastNode = l.get(l.size()-1);
+					start =lastNode;
+
+
+
+					if (!expectedStart.agent.compare(player,false)) {
+						//PathExecutor will call this function again, so there is no point in trying to come up with a path
+						return;
+					}
+				}
+
+
+				Main.RENDERERS.clear();
+				Node n = lastNode;
+
+				List<Node> l = new ArrayList<>();
+				while(n.parent != null) {
+					l.add(n);
+					Main.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
+					Main.RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+					n = n.parent;
+				}
+				l.add(n);
+				Collections.reverse(l);
+
+				Main.EXECUTOR.setPath(l);
+			}
+		}).start();
 	}
 
 
