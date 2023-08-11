@@ -1,21 +1,20 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "tungsten",
   "version": "${version}",
 
   "name": "Tungsten",
   "description": "A path finding bot",
   "authors": [
-    "Miran",
-    "KaptainWutax"
+    "Miran"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "",
+    "sources": "https://github.com/MiranCZ/Tungsten"
   },
 
   "license": "CC0-1.0",
-  "icon": "assets/modid/icon.png",
+  "icon": "assets/tungsten/icon.png",
 
   "environment": "*",
   "entrypoints": {
@@ -24,7 +23,7 @@
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "tungsten.mixins.json"
   ],
 
   "depends": {
