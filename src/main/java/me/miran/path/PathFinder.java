@@ -2,10 +2,12 @@ package me.miran.path;
 
 import me.miran.Main;
 import me.miran.agent.Agent;
+import me.miran.render.Color;
 import me.miran.render.Cuboid;
 import me.miran.render.Line;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
@@ -26,7 +28,7 @@ public class PathFinder {
 		blockLimit = 10;
 		searchThread = new Thread(() -> {
 			try {
-				search(world, target);
+				Main.EXECUTOR.setPath(search(world, target));
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -39,11 +41,9 @@ public class PathFinder {
 
 	private static int blockLimit;
 
-	private static void search(WorldView world, Vec3d target) {
+	private static List<Node> search(WorldView world, Vec3d target) {
 		Main.RENDERERS.clear();
-
-
-		int i = 0;
+		List<Node> path = null;
 
 		Map<BlockPos,Integer> map = new HashMap<>();
 
@@ -52,12 +52,11 @@ public class PathFinder {
 
 		Node start = new Node(null, Agent.of(player), null, 0);
 
-		Queue<Node> open = new PriorityQueue<>(Comparator.comparingDouble(o -> o.heuristic));
+		Queue<Node> open = new PriorityQueue<>(Comparator.comparingDouble(o -> o.pathCost+ o.heuristic));
 		Set<Vec3d> closed = new HashSet<>();
 
 		open.add(start);
 
-		BlockPos repeatingPos = null;
 		int repeatedTimes = -1;
 
 		HashSet<BlockPos> set = new HashSet<>();
@@ -69,9 +68,10 @@ public class PathFinder {
 
 
 			if(next.agent.getPos().squaredDistanceTo(target) <= 1.0D && next.agent.onGround) {
+				path = new ArrayList<>();
 				Main.RENDERERS.clear();
 				Node n = next;
-				List<Node> path = new ArrayList<>();
+
 
 				while(n.parent != null) {
 					path.add(n);
@@ -82,14 +82,13 @@ public class PathFinder {
 
 				path.add(n);
 				Collections.reverse(path);
-				Main.EXECUTOR.setPath(path);
 				break;
 			}
 
 			for(Node child : next.getChildren(world)) {
 				if(closed.contains(child.agent.getPos()))continue;
-				//double heuristic = 20.0D * child.agent.getPos().distanceTo(target);
-				double heuristic = child.pathCost / child.agent.getPos().distanceTo(start.agent.getPos()) * child.agent.getPos().distanceTo(target);
+				double heuristic = 20.0D * child.agent.getPos().distanceTo(target);
+				//double heuristic = child.pathCost / child.agent.getPos().distanceTo(start.agent.getPos()) * child.agent.getPos().distanceTo(target);
 
 
 				if (child.agent.onGround) {
@@ -97,7 +96,6 @@ public class PathFinder {
 					map.put(pos,map.getOrDefault(pos,0)+1);
 					int repeat = map.get(pos);
 					if (repeat > repeatedTimes) {
-						repeatingPos = pos;
 						repeatedTimes = repeat;
 					}
 
@@ -127,26 +125,44 @@ public class PathFinder {
 
 			System.out.println(set.size());
 			if (set.size() > 250) {
-				if (blockLimit == 200) {
-					blockLimit = 1000;
-				} else if (blockLimit == 50) {
-					blockLimit = 200;
-				} else if (blockLimit == 10) {
-					blockLimit = 50;
-				}
-
-				set.clear();
-
-				player.sendMessage(Text.literal("Limit too low, recalculating with " + blockLimit).formatted(Formatting.DARK_AQUA));
-				search(world, target);
-				return;
+				path = recalculatePathWithHigherBlockLimit(player,world,target);
 			}
 
+
 		}
+
+		if (path == null) {
+			if (blockLimit < 1000) {
+				path = recalculatePathWithHigherBlockLimit(player,world,target);
+			} else {
+				path = new ArrayList<>();
+			}
+		}
+
 		List<Integer> list = new ArrayList<>(map.values().stream().toList());
 		Collections.sort(list);
+		int ind = list.size()-10;
+		if (list.size() < 10) {
+			ind = list.size();
+		}
 
-		player.sendMessage(Text.literal(list.subList(list.size()-10,list.size()).toString()));
+		player.sendMessage(Text.literal(list.subList(ind,list.size()).toString()));
+
+		return path;
+	}
+
+	private static List<Node> recalculatePathWithHigherBlockLimit(PlayerEntity player,WorldView world, Vec3d target){
+		if (blockLimit == 200) {
+			blockLimit = 1000;
+		} else if (blockLimit == 50) {
+			blockLimit = 200;
+		} else if (blockLimit == 10) {
+			blockLimit = 50;
+		}
+
+
+		player.sendMessage(Text.literal("Limit too low, recalculating with " + blockLimit).formatted(Formatting.DARK_AQUA));
+		return search(world, target);
 	}
 
 
