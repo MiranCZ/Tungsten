@@ -21,7 +21,8 @@ public class MixinClientPlayNetworkHandler {
 
     @Shadow @Final private ClientConnection connection;
 
-    @Inject(method = "onEntityTrackerUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/util/thread/ThreadExecutor;)V",
+    //TODO figure out wtf is this supposed to do
+   /* @Inject(method = "onEntityTrackerUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/util/thread/ThreadExecutor;)V",
         shift = At.Shift.AFTER), cancellable = true)
     public void onEntityTrackerUpdate(EntityTrackerUpdateS2CPacket packet, CallbackInfo ci) {
         if(Main.EXECUTOR.isRunning()) {
@@ -31,7 +32,7 @@ public class MixinClientPlayNetworkHandler {
                 ci.cancel();
             }
         }
-    }
+    }*/
 
     @Inject(method = "onPlayerPositionLook", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/util/thread/ThreadExecutor;)V",
         shift = At.Shift.AFTER), cancellable = true)

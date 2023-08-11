@@ -57,7 +57,7 @@ public class PathExecutor {
 
 		    if(this.tick != 0) {
 
-			   if (!this.path.get(this.tick - 1).agent.compare(player, false)) {
+			   if (!this.path.get(this.tick - 1).agent.compare(player, true)) {
 
 				   end(options);
 				   if (recalculationMessageCooldown == 0) {

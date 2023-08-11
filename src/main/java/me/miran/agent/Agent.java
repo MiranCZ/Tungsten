@@ -1061,6 +1061,11 @@ public class Agent {
                             //change block state
                         } else if(state.getBlock() instanceof WitherRoseBlock) {
                             //damage the entity
+                        }else if (state.getBlock() instanceof PowderSnowBlock) {
+                            //this doesnt completely work, but its enough to keep it out of the snow
+                            //TODO finish powderSnow sim
+                            this.fallDistance = 0;
+                            mulX = 0.8999999761581421; mulY = 1.5; mulZ = 0.8999999761581421;
                         }
                     }
                 }
