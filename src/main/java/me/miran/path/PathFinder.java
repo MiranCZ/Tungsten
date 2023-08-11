@@ -52,8 +52,6 @@ public class PathFinder {
 
 		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 
-		//Node start = new Node(null, Agent.of(player), null, 0);
-
 		Queue<Node> open = new PriorityQueue<>(Comparator.comparingDouble(o -> o.pathCost+ o.heuristic));
 		Set<Vec3d> closed = new HashSet<>();
 
@@ -71,14 +69,11 @@ public class PathFinder {
 
 			if(next.agent.getPos().squaredDistanceTo(target) <= neededDist && next.agent.onGround) {
 				path = new ArrayList<>();
-				Main.RENDERERS.clear();
-				Node n = next;
 
+				Node n = next;
 
 				while(n.parent != null) {
 					path.add(n);
-					Main.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
-					Main.RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
 					n = n.parent;
 				}
 
@@ -125,7 +120,6 @@ public class PathFinder {
 				Main.RENDERERS.add(new Line(child.agent.getPos(), child.parent.agent.getPos(), child.color));
 			}
 
-			//System.out.println(set.size());
 			if (set.size() > 250) {
 				path = recalculatePathWithHigherBlockLimit(player,world,target,start);
 			}
@@ -159,14 +153,32 @@ public class PathFinder {
 		return search(world, target,start);
 	}
 
+	private static Thread mismatchSearchThread = null;
+
 	public static void calculateContinuedPathWithMismatch(WorldView world,final List<Node> path, int tick) {
+		if (mismatchSearchThread != null) return;
+
 		neededDist = 5;
-		new Thread(new Runnable() {
+		mismatchSearchThread = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				Main.EXECUTOR.calculating = true;
+				try {
+					runSearch();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				Main.EXECUTOR.calculating = false;
+				mismatchSearchThread = null;
+			}
+
+
+
+			private void runSearch() throws InterruptedException {
 
 				ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 				Node expectedStart = new Node(null, Agent.of(player), Color.WHITE, 0);
+
 
 				Node start = new Node(null, Agent.of(player), Color.WHITE, 0);
 
@@ -176,6 +188,8 @@ public class PathFinder {
 
 
 				for (int i = 0;i < path2.size();) {
+					if (shouldStop) return;
+
 					Node a = path2.get(path2.size()-1);
 					Node lastGround = null;
 					for (Node node : path2.subList(i,path2.size())) {
@@ -188,12 +202,15 @@ public class PathFinder {
 						}
 					}
 					i = path2.indexOf(a)+1;
+
+					Vec3d targetPos = a.agent.getPos();
 					if (i >= path2.size()) {
+						targetPos = Main.TARGET;
 						neededDist = 1;//needs to walk fully to the target
 					}
 
 
-					List<Node> l = search(world, a.agent.getPos(),start);
+					List<Node> l = search(world,targetPos ,start);
 					lastNode = l.get(l.size()-1);
 					start =lastNode;
 
@@ -218,7 +235,9 @@ public class PathFinder {
 
 				Main.EXECUTOR.setPath(l);
 			}
-		}).start();
+
+		});
+		mismatchSearchThread.start();
 	}
 
 
