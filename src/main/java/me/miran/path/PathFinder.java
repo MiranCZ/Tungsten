@@ -188,6 +188,9 @@ public class PathFinder {
 						}
 					}
 					i = path2.indexOf(a)+1;
+					if (i >= path2.size()) {
+						neededDist = 1;//needs to walk fully to the target
+					}
 
 
 					List<Node> l = search(world, a.agent.getPos(),start);
@@ -203,14 +206,11 @@ public class PathFinder {
 				}
 
 
-				Main.RENDERERS.clear();
 				Node n = lastNode;
 
 				List<Node> l = new ArrayList<>();
 				while(n.parent != null) {
 					l.add(n);
-					Main.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
-					Main.RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
 					n = n.parent;
 				}
 				l.add(n);
