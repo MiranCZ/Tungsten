@@ -107,6 +107,12 @@ public class PathFinder {
 				if (child.agent.touchingWater) {
 					heuristic = Integer.MAX_VALUE;//we hate water
 				}
+				if (child.agent.horizontalCollision) {
+					//massive collision punish
+					double d = 25+ (Math.abs(next.agent.velZ-child.agent.velY)+Math.abs(next.agent.velX-child.agent.velX))*120;
+					System.out.println(d);
+					heuristic += d;
+				}
 
 
 				child.heuristic = heuristic;
@@ -120,7 +126,7 @@ public class PathFinder {
 				Main.RENDERERS.add(new Line(child.agent.getPos(), child.parent.agent.getPos(), child.color));
 			}
 
-			if (set.size() > 250) {
+			if (set.size() > 250 && blockLimit < 1000) {
 				path = recalculatePathWithHigherBlockLimit(player,world,target,start);
 			}
 
