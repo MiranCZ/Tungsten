@@ -45,6 +45,7 @@ public class PathFinder {
 		long time = System.currentTimeMillis();
 		CountDownLatch latch = new CountDownLatch(1);
 
+
 		searchThread = new Thread(() -> {
 			try {
 				path2.set(search(world, target, new Node(null, agent, null, 0), 100, Calculators.A_STAR));
@@ -52,7 +53,7 @@ public class PathFinder {
 				e.printStackTrace();
 			}
 			searchThread = null;
-			shouldStop = true;
+			shouldStop = false;
 			Main.RENDERERS.clear();
 			latch.countDown();
 
@@ -74,6 +75,7 @@ public class PathFinder {
 		}
         shouldStop = latch.getCount() != 0;
 
+
 		if (path2.get() != null && !path2.get().isEmpty()) {
 			MinecraftClient.getInstance().player.sendMessage(Text.of("A*"));
 			Main.EXECUTOR.setPath(path2.get());
@@ -82,7 +84,7 @@ public class PathFinder {
 			Main.EXECUTOR.setPath(path1);
 		}
 		Main.RENDERERS.clear();
-		shouldStop = false;
+
 	}
 
 	private static double neededDist;

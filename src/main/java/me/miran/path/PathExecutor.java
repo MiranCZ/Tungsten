@@ -25,7 +25,9 @@ public class PathExecutor {
     	this.path = path;
     	this.tick = 0;
 
-		renderCurrentPath();
+		if (!path.isEmpty()) {
+			renderCurrentPath();
+		}
 	}
 
 	private void renderCurrentPath() {
