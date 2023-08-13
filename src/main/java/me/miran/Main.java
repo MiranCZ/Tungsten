@@ -20,6 +20,7 @@ import java.util.Collections;
 public class Main implements ModInitializer {
 
 	public static Collection<Renderer> RENDERERS = Collections.synchronizedCollection(new ArrayList<>());
+	public static Collection<Renderer> PATH_RENDERERS = Collections.synchronizedCollection(new ArrayList<>());
 	public static Vec3d TARGET = new Vec3d(0,0,0);
 	public static Renderer targetRenderer;
 	public static PathExecutor EXECUTOR = new PathExecutor();

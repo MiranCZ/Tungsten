@@ -31,6 +31,12 @@ public class MixinDebugRenderer {
             tessellator.draw();
         });
 
+        Main.PATH_RENDERERS.forEach(r -> {
+            buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+            r.render();
+            tessellator.draw();
+        });
+
         RenderSystem.lineWidth(3);
 
         buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);

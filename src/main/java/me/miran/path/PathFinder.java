@@ -3,7 +3,6 @@ package me.miran.path;
 import me.miran.Main;
 import me.miran.agent.Agent;
 import me.miran.render.Color;
-import me.miran.render.Cuboid;
 import me.miran.render.Line;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -15,35 +14,81 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldView;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class PathFinder {
 
 	private static Thread searchThread = null;
 	public static boolean shouldStop = false;
 
+	private static final long timeLimitMs = 1000;
+
 	public static void find(WorldView world, Vec3d target) {
 		if(searchThread != null)return;
-		shouldStop = false;
 
-		blockLimit = 10;
-		neededDist = 1;
-		searchThread = new Thread(() -> {
-			try {
-				Main.EXECUTOR.setPath(search(world, target,new Node(null, Agent.of(Objects.requireNonNull(MinecraftClient.getInstance().player)), null, 0)));
-			} catch(Exception e) {
-				e.printStackTrace();
-			}
-
-			searchThread = null;
-			shouldStop = false;
-		});
-		searchThread.start();
+		new Thread(()->findThread(world, target)).start();
 	}
 
-	private static int blockLimit;
+
+	private static void findThread(WorldView world, Vec3d target) {
+		shouldStop = false;
+
+		neededDist = 1;
+
+		Agent agent = Agent.of(Objects.requireNonNull(MinecraftClient.getInstance().player));
+
+		List<Node> path1 = new ArrayList<>();
+		AtomicReference<List<Node>> path2 = new AtomicReference<>();
+
+		long time = System.currentTimeMillis();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		searchThread = new Thread(() -> {
+			try {
+				path2.set(search(world, target, new Node(null, agent, null, 0), 100, Calculators.A_STAR));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			searchThread = null;
+			shouldStop = true;
+			Main.RENDERERS.clear();
+			latch.countDown();
+
+		});
+		searchThread.start();
+
+		try {
+			path1 = search(world, target, new Node(null, agent, null, 0), 20, Calculators.GREEDY);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		if (System.currentTimeMillis()< time + timeLimitMs) {
+			try {
+				latch.await((time+timeLimitMs)-System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+        shouldStop = latch.getCount() != 0;
+
+		if (path2.get() != null && !path2.get().isEmpty()) {
+			MinecraftClient.getInstance().player.sendMessage(Text.of("A*"));
+			Main.EXECUTOR.setPath(path2.get());
+		} else {
+			MinecraftClient.getInstance().player.sendMessage(Text.of("GREEDY"));
+			Main.EXECUTOR.setPath(path1);
+		}
+		Main.RENDERERS.clear();
+		shouldStop = false;
+	}
+
 	private static double neededDist;
 
-	private static List<Node> search(WorldView world, Vec3d target, Node start) {
+
+	private static List<Node> search(WorldView world, Vec3d target, Node start,int blockLimit, HeuristicCalculator calculator ) {
 		Main.RENDERERS.clear();
 		List<Node> path = null;
 
@@ -52,7 +97,7 @@ public class PathFinder {
 
 		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 
-		Queue<Node> open = new PriorityQueue<>(Comparator.comparingDouble(o -> o.pathCost+ o.heuristic));
+		Queue<Node> open = new PriorityQueue<>(Comparator.comparingDouble(o ->o.heuristic));
 		Set<Vec3d> closed = new HashSet<>();
 
 		open.add(start);
@@ -67,7 +112,7 @@ public class PathFinder {
 			if(closed.size() > 1_000_000)break;
 
 
-			if(next.agent.getPos().squaredDistanceTo(target) <= neededDist && next.agent.onGround) {
+			if(next.agent.getPos().squaredDistanceTo(target) <= neededDist /*&& next.agent.onGround*/) {
 				path = new ArrayList<>();
 
 				Node n = next;
@@ -84,8 +129,6 @@ public class PathFinder {
 
 			for(Node child : next.getChildren(world)) {
 				if(closed.contains(child.agent.getPos()))continue;
-				double heuristic = 20.0D * child.agent.getPos().distanceTo(target);
-				//double heuristic = child.pathCost / child.agent.getPos().distanceTo(start.agent.getPos()) * child.agent.getPos().distanceTo(target);
 
 
 				if (child.agent.onGround) {
@@ -103,19 +146,7 @@ public class PathFinder {
 
 				}
 
-
-				if (child.agent.touchingWater) {
-					heuristic = Integer.MAX_VALUE;//we hate water
-				}
-				if (child.agent.horizontalCollision) {
-					//massive collision punish
-					double d = 25+ (Math.abs(next.agent.velZ-child.agent.velY)+Math.abs(next.agent.velX-child.agent.velX))*120;
-					System.out.println(d);
-					heuristic += d;
-				}
-
-
-				child.heuristic = heuristic;
+				child.heuristic = calculator.calculate(next,start,child,target);
 
 				open.add(child);
 
@@ -126,37 +157,27 @@ public class PathFinder {
 				Main.RENDERERS.add(new Line(child.agent.getPos(), child.parent.agent.getPos(), child.color));
 			}
 
-			if (set.size() > 250 && blockLimit < 1000) {
-				path = recalculatePathWithHigherBlockLimit(player,world,target,start);
+			if (set.size() > 600) {
+				path = recalculatePathWithHigherBlockLimit(player,world,target,start,blockLimit,calculator);
+				break;
 			}
-
 
 		}
 
 		if (path == null) {
-			if (blockLimit < 1000) {
-				path = recalculatePathWithHigherBlockLimit(player,world,target,start);
-			} else {
-				player.sendMessage(Text.literal("Wasn't able to find a path... sorry :(").formatted(Formatting.DARK_RED));
-				path = new ArrayList<>();
-			}
+			path = recalculatePathWithHigherBlockLimit(player,world,target,start,blockLimit,calculator);
 		}
 
 		return path;
 	}
 
-	private static List<Node> recalculatePathWithHigherBlockLimit(PlayerEntity player,WorldView world, Vec3d target,Node start){
-		if (blockLimit == 200) {
-			blockLimit = 1000;
-		} else if (blockLimit == 50) {
-			blockLimit = 200;
-		} else if (blockLimit == 10) {
-			blockLimit = 50;
+	private static List<Node> recalculatePathWithHigherBlockLimit(PlayerEntity player,WorldView world, Vec3d target,Node start, int blockLimit, HeuristicCalculator calculator){
+		if (blockLimit > 2000) {
+			return new ArrayList<>();
 		}
+		blockLimit *= 2;
 
-
-		player.sendMessage(Text.literal("Limit too low, recalculating with " + blockLimit).formatted(Formatting.DARK_AQUA));
-		return search(world, target,start);
+		return search(world, target,start,blockLimit,calculator);
 	}
 
 	private static Thread mismatchSearchThread = null;
@@ -180,7 +201,7 @@ public class PathFinder {
 
 
 
-			private void runSearch() throws InterruptedException {
+			private void runSearch() {
 
 				ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 				Node expectedStart = new Node(null, Agent.of(player), Color.WHITE, 0);
@@ -198,8 +219,10 @@ public class PathFinder {
 
 					Node a = path2.get(path2.size()-1);
 					Node lastGround = null;
+					int ticks = 0;
 					for (Node node : path2.subList(i,path2.size())) {
-						if (node.agent.getPos().distanceTo(start.agent.getPos()) > 10 && lastGround != null) {
+						ticks++;
+						if (ticks > 20 && lastGround != null) {
 							a = lastGround;
 							break;
 						}
@@ -216,7 +239,7 @@ public class PathFinder {
 					}
 
 
-					List<Node> l = search(world,targetPos ,start);
+					List<Node> l = search(world,targetPos ,start,40,Calculators.A_STAR);
 					lastNode = l.get(l.size()-1);
 					start =lastNode;
 
@@ -240,6 +263,7 @@ public class PathFinder {
 				Collections.reverse(l);
 
 				Main.EXECUTOR.setPath(l);
+				Main.RENDERERS.clear();
 			}
 
 		});

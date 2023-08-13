@@ -29,12 +29,12 @@ public class PathExecutor {
 	}
 
 	private void renderCurrentPath() {
-		Main.RENDERERS.clear();
+		Main.PATH_RENDERERS.clear();
 		Node n = path.get(path.size()-1);
 
 		while(n.parent != null) {
-			Main.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
-			Main.RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
+			Main.PATH_RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
+			Main.PATH_RENDERERS.add(new Cuboid(n.agent.getPos().subtract(0.05D, 0.05D, 0.05D), new Vec3d(0.1D, 0.1D, 0.1D), n.color));
 			n = n.parent;
 		}
 	}
@@ -57,7 +57,7 @@ public class PathExecutor {
 
 		    if(this.tick != 0) {
 
-			   if (!this.path.get(this.tick - 1).agent.compare(player, true)) {
+			   if (!this.path.get(this.tick - 1).agent.compare(player, false)) {
 
 				   end(options);
 				   if (recalculationMessageCooldown == 0) {
