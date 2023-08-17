@@ -1,7 +1,13 @@
 package me.miran.path;
 
+import baritone.api.pathing.calc.IPath;
+import baritone.api.pathing.goals.GoalBlock;
+import baritone.api.utils.BetterBlockPos;
 import me.miran.Main;
 import me.miran.agent.Agent;
+import me.miran.path.calculators.BaritoneCalculator;
+import me.miran.path.calculators.Calculators;
+import me.miran.path.calculators.HeuristicCalculator;
 import me.miran.render.Color;
 import me.miran.render.Line;
 import net.minecraft.client.MinecraftClient;
@@ -14,8 +20,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldView;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PathFinder {
@@ -23,68 +27,66 @@ public class PathFinder {
 	private static Thread searchThread = null;
 	public static boolean shouldStop = false;
 
-	private static final long timeLimitMs = 1000;
-
 	public static void find(WorldView world, Vec3d target) {
 		if(searchThread != null)return;
+		BaritonePathFinder.initContext();
 
-		new Thread(()->findThread(world, target)).start();
+		searchThread = new Thread(()->findThread(world, target));
+		searchThread.start();
 	}
 
 
 	private static void findThread(WorldView world, Vec3d target) {
 		shouldStop = false;
-
 		neededDist = 1;
 
 		Agent agent = Agent.of(Objects.requireNonNull(MinecraftClient.getInstance().player));
 
 		List<Node> path1 = new ArrayList<>();
-		AtomicReference<List<Node>> path2 = new AtomicReference<>();
 
-		long time = System.currentTimeMillis();
-		CountDownLatch latch = new CountDownLatch(1);
+		PlayerEntity player = MinecraftClient.getInstance().player;
+		Vec3d t = Main.TARGET;
+		BlockPos pos = new BetterBlockPos(t.x,t.y,t.z);
 
-
-		searchThread = new Thread(() -> {
-			try {
-				path2.set(search(world, target, new Node(null, agent, null, 0), 100, Calculators.A_STAR));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			searchThread = null;
+		IPath path;
+		try {
+			path = BaritonePathFinder.tryToFindPath(player.getBlockPos(), new GoalBlock(pos));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return;
+		}
+		if (path == null) {
+			player.sendMessage(Text.literal("path not found").formatted(Formatting.RED));
 			shouldStop = false;
-			Main.RENDERERS.clear();
-			latch.countDown();
+			searchThread = null;
+			return;
+		}
 
-		});
-		searchThread.start();
+		HeuristicCalculator calculator = new BaritoneCalculator(new ArrayList<>(path.positions()));
+
+		List<BetterBlockPos> positions = path.positions();
+
+		Main.TEST.clear();
+		for (int i = 1; i < positions.size(); i++) {
+			BetterBlockPos start = positions.get(i-1);
+			BetterBlockPos end = positions.get(i);
+
+			Main.TEST.add(new Line(new Vec3d(start.x+0.5,start.y+0.1,start.z+0.5),new Vec3d(end.x+0.5,end.y+0.1,end.z+0.5), new Color(255,0,0) ));
+
+		}
 
 		try {
-			path1 = search(world, target, new Node(null, agent, null, 0), 20, Calculators.GREEDY);
+			path1 = search(world, target, new Node(null, agent, null, 0), 10, calculator);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		if (System.currentTimeMillis()< time + timeLimitMs) {
-			try {
-				latch.await((time+timeLimitMs)-System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
-        shouldStop = latch.getCount() != 0;
 
+		Main.EXECUTOR.setPath(path1);
 
-		if (path2.get() != null && !path2.get().isEmpty()) {
-			MinecraftClient.getInstance().player.sendMessage(Text.of("A*"));
-			Main.EXECUTOR.setPath(path2.get());
-		} else {
-			MinecraftClient.getInstance().player.sendMessage(Text.of("GREEDY"));
-			Main.EXECUTOR.setPath(path1);
-		}
 		Main.RENDERERS.clear();
-
+		shouldStop = false;
+		searchThread = null;
 	}
 
 	private static double neededDist;
@@ -130,7 +132,7 @@ public class PathFinder {
 			}
 
 			for(Node child : next.getChildren(world)) {
-				if(closed.contains(child.agent.getPos()))continue;
+				if(closed.contains(child.agent.getPos()) || child.agent.touchingWater)continue;
 
 
 				if (child.agent.onGround) {
@@ -241,7 +243,7 @@ public class PathFinder {
 					}
 
 
-					List<Node> l = search(world,targetPos ,start,40,Calculators.A_STAR);
+					List<Node> l = search(world,targetPos ,start,40, Calculators.A_STAR);
 					lastNode = l.get(l.size()-1);
 					start =lastNode;
 

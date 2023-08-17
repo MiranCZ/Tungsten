@@ -16,6 +16,24 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+	flatDir {
+		dirs "./lib"
+	}
+}
+
+
+
+def urlFile = { url, name, version ->
+	File file = new File("$rootDir/lib/${name}-${version}.jar")
+	file.parentFile.mkdirs()
+	if (!file.exists()) {
+		new URL(url).withInputStream { downloadStream ->
+			file.withOutputStream { fileOut ->
+				fileOut << downloadStream
+			}
+		}
+	}
+	return [name: name, version: version]
 }
 
 dependencies {
@@ -26,6 +44,8 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	modImplementation urlFile("https://github.com/cabaletta/baritone/releases/download/v1.9.4/baritone-api-fabric-1.9.4.jar", 'baritone', '1.19.2-1.9.4')
 
 	// Uncomment the following line to enable the deprecated Fabric API modules. 
 	// These are included in the Fabric API production distribution and allow you to update your mod to the latest modules at a later more convenient time.

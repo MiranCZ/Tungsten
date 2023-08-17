@@ -1,4 +1,4 @@
-package me.miran.mixin;
+package me.miran.mixin.minecraft;
 
 import me.miran.Main;
 import me.miran.world.VoxelWorld;

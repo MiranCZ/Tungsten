@@ -1,4 +1,4 @@
-package me.miran.mixin;
+package me.miran.mixin.minecraft;
 
 import net.minecraft.server.command.FillCommand;
 import org.spongepowered.asm.mixin.Mixin;

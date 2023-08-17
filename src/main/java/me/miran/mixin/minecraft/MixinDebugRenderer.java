@@ -1,4 +1,4 @@
-package me.miran.mixin;
+package me.miran.mixin.minecraft;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.miran.Main;
@@ -32,6 +32,13 @@ public class MixinDebugRenderer {
         });
 
         Main.PATH_RENDERERS.forEach(r -> {
+            buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+            r.render();
+            tessellator.draw();
+        });
+
+        RenderSystem.lineWidth(10);
+        Main.TEST.forEach(r -> {
             buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
             r.render();
             tessellator.draw();

@@ -49,8 +49,6 @@ public class Node {
 
 		 if(this.agent.onGround || this.agent.touchingWater) {
 			return new Node[] {
-					new Node(this, world, new PathInput(false, false, false, false, false,
-							false, false, this.agent.pitch, this.agent.yaw), new Color(0, 0, 0), this.pathCost + 1),
 					new Node(this, world, new PathInput(true, false, false, false, true,
 					false, true, this.agent.pitch, this.agent.yaw), new Color(0, 255, 0), this.pathCost + 1),
 					new Node(this, world, new PathInput(true, false, false, false, true,

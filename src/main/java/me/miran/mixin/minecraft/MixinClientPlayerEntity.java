@@ -1,4 +1,4 @@
-package me.miran.mixin;
+package me.miran.mixin.minecraft;
 
 import com.mojang.authlib.GameProfile;
 import me.miran.Main;

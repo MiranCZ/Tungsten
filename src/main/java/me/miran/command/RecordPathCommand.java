@@ -1,7 +1,6 @@
 package me.miran.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import me.miran.Main;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;

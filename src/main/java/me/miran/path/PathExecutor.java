@@ -3,7 +3,6 @@ package me.miran.path;
 import me.miran.Main;
 import me.miran.render.Cuboid;
 import me.miran.render.Line;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.text.Text;

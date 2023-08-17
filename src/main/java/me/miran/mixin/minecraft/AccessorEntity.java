@@ -1,4 +1,4 @@
-package me.miran.mixin;
+package me.miran.mixin.minecraft;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;

@@ -4,17 +4,17 @@
   "package": "me.miran.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "MixinFillCommand"
+    "baritone.PathingBehaviourInvoker",
+    "minecraft.MixinFillCommand"
   ],
   "client": [
-    "AccessorEntity",
-    "AccessorLivingEntity",
-    "MixinMinecraftClient",
-    "MixinClientPlayerEntity",
-    "MixinDebugRenderer",
-    "MixinShapeContext",
-    "MixinClientPlayNetworkHandler",
-    "MixinMinecraftClient"
+    "minecraft.AccessorEntity",
+    "minecraft.AccessorLivingEntity",
+    "minecraft.MixinClientPlayerEntity",
+    "minecraft.MixinClientPlayNetworkHandler",
+    "minecraft.MixinDebugRenderer",
+    "minecraft.MixinMinecraftClient",
+    "minecraft.MixinShapeContext"
   ],
   "injectors": {
     "defaultRequire": 1

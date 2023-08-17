@@ -1,5 +1,6 @@
-package me.miran.path;
+package me.miran.path.calculators;
 
+import me.miran.path.Node;
 import net.minecraft.util.math.Vec3d;
 
 public interface HeuristicCalculator {
