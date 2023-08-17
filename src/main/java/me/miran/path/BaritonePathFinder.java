@@ -30,13 +30,12 @@ public class BaritonePathFinder {
             pathFinder =((PathingBehaviourInvoker)((Object)h)).createPathfinder(startPos,goal,null,calculationContext);
         }
         if (pathFinder == null) {
-            System.out.println("baritone pathFinder is null; " + pathingBehaviour);
             throw new IllegalStateException("baritone pathFinder is null");
         }
 
 
         PathCalculationResult calcResult = pathFinder.calculate(BaritoneAPI.getSettings().primaryTimeoutMS.value, BaritoneAPI.getSettings().failureTimeoutMS.value);
-        System.out.println(calcResult.getType());
+
         if (calcResult.getType() == PathCalculationResult.Type.SUCCESS_TO_GOAL && calcResult.getPath().isPresent()) {
             return calcResult.getPath().get();
         }

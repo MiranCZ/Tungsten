@@ -27,7 +27,7 @@ import java.util.List;
 public class VoxelWorld implements WorldView {
 
     public final WorldView parent;
-    private Long2ObjectMap<VoxelChunk> chunks = new Long2ObjectOpenHashMap<>();
+    private final Long2ObjectMap<VoxelChunk> chunks = new Long2ObjectOpenHashMap<>();
 
     public VoxelWorld(WorldView parent) {
         this.parent = parent;

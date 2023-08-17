@@ -20,7 +20,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldView;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class PathFinder {
 
@@ -259,11 +258,10 @@ public class PathFinder {
 				Node n = lastNode;
 
 				List<Node> l = new ArrayList<>();
-				while(n.parent != null) {
+				while(n != null) {
 					l.add(n);
 					n = n.parent;
 				}
-				l.add(n);
 				Collections.reverse(l);
 
 				Main.EXECUTOR.setPath(l);

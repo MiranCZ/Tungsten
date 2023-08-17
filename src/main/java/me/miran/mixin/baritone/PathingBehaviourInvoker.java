@@ -13,6 +13,6 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface PathingBehaviourInvoker {
 
     @Invoker("a")
-    public bs createPathfinder(BlockPos var0, Goal var1, IPath var2, bv var3);
+    bs createPathfinder(BlockPos var0, Goal var1, IPath var2, bv var3);
 
 }

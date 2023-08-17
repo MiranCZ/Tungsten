@@ -7,7 +7,7 @@ public class Cuboid extends Renderer {
     public Vec3d start;
     public Vec3d size;
 
-    private Line[] edges = new Line[12];
+    private final Line[] edges = new Line[12];
 
     public Cuboid() {
         this(Vec3d.ZERO, Vec3d.ZERO, Color.WHITE);

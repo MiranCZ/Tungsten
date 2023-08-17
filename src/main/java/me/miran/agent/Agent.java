@@ -110,7 +110,6 @@ public class Agent {
     public float airStrafingSpeed;
     public int jumpingCooldown;
     public int ticksToNextAutojump;
-    private List<String> extra = new ArrayList<>();
     private int scannedBlocks;
 
     public Vec3d getPos() {
@@ -867,8 +866,7 @@ public class Agent {
     public boolean isClimbing(WorldView world) {
         BlockState state = world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ));
         if(state.isIn(BlockTags.CLIMBABLE)) return true;
-        if(state.getBlock() instanceof TrapdoorBlock && this.canEnterTrapdoor(world, state)) return true;
-        return false;
+        return state.getBlock() instanceof TrapdoorBlock && this.canEnterTrapdoor(world, state);
     }
 
     private boolean canEnterTrapdoor(WorldView world, BlockState trapdoor) {
@@ -876,11 +874,7 @@ public class Agent {
 
         BlockState ladder = world.getBlockState(new BlockPos(this.blockX, this.blockY - 1, this.blockZ));
 
-        if(ladder.isOf(Blocks.LADDER) && ladder.get(LadderBlock.FACING) == trapdoor.get(TrapdoorBlock.FACING)) {
-            return true;
-        }
-
-        return false;
+        return ladder.isOf(Blocks.LADDER) && ladder.get(LadderBlock.FACING) == trapdoor.get(TrapdoorBlock.FACING);
     }
 
     void checkWaterState(WorldView world) {

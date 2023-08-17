@@ -74,13 +74,6 @@ public class AgentBlockCollisions extends AbstractIterator<VoxelShape> {
                     continue;
                 }
 
-                /*
-                BlockView blockView = this.getChunk(i, k);
-
-                if(blockView == null) {
-                    continue;
-                }*/
-
                 BlockView blockView = this.world;
 
                 this.pos.set(i, j, k);
