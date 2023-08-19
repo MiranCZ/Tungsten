@@ -65,7 +65,7 @@ public class PathExecutor {
 					   player.sendMessage(Text.literal("Something went wrong... recalculating path!").formatted(Formatting.AQUA));
 					   recalculationMessageCooldown = 10;//prevents from spamming the message
 				   }
-				   PathFinder.calculateContinuedPathWithMismatch(player.getWorld(),path,tick);
+				   PathRebuilder.calculateContinuedPathWithMismatch(player.getWorld(),path,tick);
 				   return;
 			   }
 		    }

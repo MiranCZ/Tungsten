@@ -21,7 +21,7 @@ public class StopCommand implements CommandRegistrationCallback {
 
     private int run(ServerCommandSource source) {
         source.sendMessage(Text.literal("Force stopping search thread").formatted(Formatting.DARK_GREEN));
-        PathFinder.shouldStop = true;
+        PathFinder.forceStop();
         Main.EXECUTOR = new PathExecutor();
         Main.EXECUTOR.end(MinecraftClient.getInstance().options);
 

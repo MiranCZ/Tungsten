@@ -43,7 +43,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
 		if(Main.startPathing) {
 			Main.startPathing = false;
-			PathFinder.find(this.world, Main.TARGET);
+			PathFinder.findAndSetPathAsync(this.world, Main.TARGET);
 		}
 		if (RecordPathCommand.recording) {
 			Main.RENDERERS.add(new Line(getPos(), prevPos,new Color(0,0,255)));
