@@ -17,6 +17,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldView;
 
 import java.util.*;
@@ -28,15 +29,49 @@ public class PathFinder {
 
 	public static void find(WorldView world, Vec3d target) {
 		if(searchThread != null)return;
+		shouldStop = false;
+
 		BaritonePathFinder.initContext();
+		nodesExplored = 0;
+
+		startRenderThread();
 
 		searchThread = new Thread(()->findThread(world, target));
 		searchThread.start();
 	}
 
+	private static void startRenderThread() {
+		//probably not the best way  to implement it
+		//TODO: maybe improve this in the future
+		new Thread(()-> {
+			System.out.println("RENDER THREAD START");
+
+			HashSet<Node> set = new HashSet<>();
+
+			while (!shouldStop) {
+				final Node n = renderNode;
+
+				if (n == null || n.parent == null || set.contains(n)) continue;
+
+				set.add(n);
+
+				if(Main.RENDERERS.size() > 5000) {
+					Main.RENDERERS.clear();
+				}
+
+				Main.RENDERERS.add(new Line(n.agent.getPos(), n.parent.agent.getPos(), n.color));
+			}
+
+			System.out.println("RENDER THREAD END");
+		}).start();
+	}
+
+
+	private static Node renderNode;
 
 	private static void findThread(WorldView world, Vec3d target) {
-		shouldStop = false;
+		long startMillis = System.currentTimeMillis();
+
 		neededDist = 1;
 
 		Agent agent = Agent.of(Objects.requireNonNull(MinecraftClient.getInstance().player));
@@ -86,16 +121,28 @@ public class PathFinder {
 		Main.RENDERERS.clear();
 		shouldStop = false;
 		searchThread = null;
+
+		long timeElapsed = System.currentTimeMillis()-startMillis;
+		player.sendMessage(
+				Text.literal("Path found! ").formatted(Formatting.DARK_GREEN)
+						.append(Text.literal(nodesExplored + " nodes explored in " +timeElapsed + " ms").formatted(Formatting.AQUA))
+						.append(Text.literal(" (" + ((int)Math.floor(nodesExplored/(timeElapsed/1000d))) +" nodes per second)").formatted(Formatting.GRAY))
+		);
+
+		shouldStop = true;
 	}
 
 	private static double neededDist;
+	private static int nodesExplored = 0;
 
 
 	private static List<Node> search(WorldView world, Vec3d target, Node start,int blockLimit, HeuristicCalculator calculator ) {
+		assert blockLimit < Short.MAX_VALUE;
+
 		Main.RENDERERS.clear();
 		List<Node> path = null;
 
-		Map<BlockPos,Integer> map = new HashMap<>();
+		Map<Vec3i,Short> map = new HashMap<>();
 
 
 		ClientPlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
@@ -105,17 +152,19 @@ public class PathFinder {
 
 		open.add(start);
 
-		int repeatedTimes = -1;
-
-		HashSet<BlockPos> set = new HashSet<>();
+		int blocksCount = 0;
 
 		while(!open.isEmpty() && !shouldStop) {
+			nodesExplored++;
+
 			Node next = open.poll();
+			renderNode = next;
+
 			closed.add(next.agent.getPos());
 			if(closed.size() > 1_000_000)break;
 
 
-			if(next.agent.getPos().squaredDistanceTo(target) <= neededDist /*&& next.agent.onGround*/) {
+			if(next.agent.squaredDistanceTo(target) <= neededDist /*&& next.agent.onGround*/) {
 				path = new ArrayList<>();
 
 				Node n = next;
@@ -131,42 +180,35 @@ public class PathFinder {
 			}
 
 			for(Node child : next.getChildren(world)) {
-				if(closed.contains(child.agent.getPos()) || child.agent.touchingWater)continue;
 
+				if(child.agent.touchingWater || closed.contains(child.agent.getPos())) continue;
 
 				if (child.agent.onGround) {
-					BlockPos pos = new BlockPos(child.agent.blockX,child.agent.blockY,child.agent.blockZ);
-					map.put(pos,map.getOrDefault(pos,0)+1);
-					int repeat = map.get(pos);
-					if (repeat > repeatedTimes) {
-						repeatedTimes = repeat;
+					Vec3i pos = new Vec3i(child.agent.blockX,child.agent.blockY,child.agent.blockZ);
+					int repeat = map.getOrDefault(pos, (short) 0);
+					map.put(pos, (short) (repeat+1));
+
+					if (repeat == blockLimit) {
+						blocksCount++;
+						continue;
 					}
 
-					if (repeat > blockLimit) {
-						set.add(pos);
+					if (repeat >= blockLimit) {
+						continue;
 					}
-					if (set.contains(pos)) continue;
-
 				}
 
 				child.heuristic = calculator.calculate(next,start,child,target);
 
 				open.add(child);
-
-				if(Main.RENDERERS.size() > 5000) {
-					Main.RENDERERS.clear();
-				}
-
-				Main.RENDERERS.add(new Line(child.agent.getPos(), child.parent.agent.getPos(), child.color));
 			}
 
-			if (set.size() > 600) {
+			if (blocksCount > 600) {
 				path = recalculatePathWithHigherBlockLimit(player,world,target,start,blockLimit,calculator);
 				break;
 			}
 
 		}
-
 		if (path == null) {
 			path = recalculatePathWithHigherBlockLimit(player,world,target,start,blockLimit,calculator);
 		}

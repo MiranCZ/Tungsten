@@ -38,7 +38,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
 		if(!this.getAbilities().flying) {
 			Agent.INSTANCE = Agent.of((ClientPlayerEntity)(Object)this);
-			Agent.INSTANCE.tick(this.world);
+		//	Agent.INSTANCE.tick(this.world);
 		}
 
 		if(Main.startPathing) {
@@ -56,7 +56,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 	@Inject(method = "tick", at = @At(value = "RETURN"))
 	public void end(CallbackInfo ci) {
 		if(!this.getAbilities().flying && Agent.INSTANCE != null) {
-			Agent.INSTANCE.compare((ClientPlayerEntity)(Object)this, true);
+			//Agent.INSTANCE.compare((ClientPlayerEntity)(Object)this, true);
 		}
 	}
 

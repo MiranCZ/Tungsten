@@ -116,6 +116,13 @@ public class Agent {
         return new Vec3d(this.posX, this.posY, this.posZ);
     }
 
+    public double squaredDistanceTo(Vec3d vec) {
+        double d = vec.x - posX;
+        double e = vec.y - posY;
+        double f = vec.z - posZ;
+        return d * d + e * e + f * f;
+    }
+
     public void setPos(double x, double y, double z) {
         this.posX = x;
         this.posY = y;
