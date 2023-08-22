@@ -29,7 +29,9 @@ public class PathExecutor {
 		}
 	}
 
-	private void renderCurrentPath() {
+	public void renderCurrentPath() {
+		if (path == null || path.isEmpty()) return;
+
 		Main.PATH_RENDERERS.clear();
 		Node n = path.get(path.size()-1);
 

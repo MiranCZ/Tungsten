@@ -66,14 +66,58 @@ public class PathFinder {
 
 
 		try {
-			HeuristicCalculator calculator = new BaritoneCalculator(new ArrayList<>(baritonePath.positions()));
+			List<BetterBlockPos> positions = baritonePath.positions();
+			List<Node> path = new ArrayList<>();
+			Agent agent = Agent.of(MinecraftClient.getInstance().player);
+			Node prevNode = null;
+			boolean set = false;
+			int sectionNum = 0;
+
+			int i = 0;
+			while (i < positions.size()) {
+				sectionNum++;
+
+				long millis = System.currentTimeMillis();
+
+				int nextI = i+50;
+				if (nextI >= positions.size()) nextI = positions.size();
+				BlockPos sectionTargetPos = positions.get(nextI-1);
+				Vec3d sectionTarget = new Vec3d(sectionTargetPos.getX(),sectionTargetPos.getY(),sectionTargetPos.getZ());
+
+				HeuristicCalculator calculator = new BaritoneCalculator(positions.subList(i,nextI));
+				List<Node> pathSection = search(world,sectionTarget , new Node(null,agent , null, 0), 10, calculator,1);
+				if (prevNode != null) {
+					pathSection.remove(0);
+				}
+
+				pathSection.get(0).parent = prevNode;
+
+				path.addAll(pathSection);
+				Main.EXECUTOR.renderCurrentPath();
+				player.sendMessage(Text.of("Section "+sectionNum +" finished ("+ (System.currentTimeMillis()-millis)+"ms)" ));
+
+				if (path.size() > 40 && !set) {
+					set = true;
+					Main.EXECUTOR.setPath(path);
+				}
+				prevNode = pathSection.get(pathSection.size()-1);
+				agent = prevNode.agent;
+
+
+				i = nextI;
+			}
+			if (!path.isEmpty()) {
+				sendSuccessMessage(player, System.currentTimeMillis() - startMillis);
+			}
+
+			/*HeuristicCalculator calculator = new BaritoneCalculator(baritonePath.positions());
 			List<Node> path = search(world, target, new Node(null, Agent.of(MinecraftClient.getInstance().player), null, 0), 10, calculator,1);
 
 			Main.EXECUTOR.setPath(path);
 
 			if (!path.isEmpty()) {
 				sendSuccessMessage(player, System.currentTimeMillis() - startMillis);
-			}
+			}*/
 		} catch (Exception e) {
 			e.printStackTrace();
 			player.sendMessage(Text.literal("Something went wrong while calculating path (" + e.getMessage() +")").formatted(Formatting.RED));
