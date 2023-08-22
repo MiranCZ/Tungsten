@@ -35,15 +35,8 @@ public class BaritoneCalculator implements HeuristicCalculator {
             index = path.indexOf(pos);
             indexOfMap.put(pos,index);
         }
-        double heuristic = -index+lowestDist+ child.pathCost/5d;
 
-        if (child.agent.horizontalCollision) {
-            //massive collision punish
-            double d = 40+ (Math.abs(parent.agent.velZ-child.agent.velZ)+Math.abs(parent.agent.velX-child.agent.velX))*120;
-            heuristic += d;
-        }
-
-        return heuristic;
+        return -index+lowestDist+ child.pathCost/5d;
     }
 
     private static double getDistanceIgnoreY(double x, double z, double x1, double z1) {

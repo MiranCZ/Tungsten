@@ -10,7 +10,6 @@ import me.miran.path.calculators.HeuristicCalculator;
 import me.miran.render.Color;
 import me.miran.render.Line;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -140,12 +139,13 @@ public class PathFinder {
 			nodesExplored++;
 
 			Node next = open.poll();
+			if (next.agent.likelyTookDamage) continue;
 
 			closed.add(next.agent.getPos());
 			if(closed.size() > 1_000_000) break;
 
 
-			if(next.agent.squaredDistanceTo(target) <= neededDist) {
+			if(next.agent.squaredDistanceTo(target) <= neededDist && next.agent.onGround) {
 				path = new ArrayList<>();
 
 				Node n = next;

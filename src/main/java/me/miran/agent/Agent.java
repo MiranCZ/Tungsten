@@ -47,6 +47,8 @@ public class Agent {
         .put(EntityPose.CROUCHING, EntityDimensions.changing(0.6f, 1.5f))
         .put(EntityPose.DYING, EntityDimensions.fixed(0.2f, 0.2f)).build();
 
+    public boolean likelyTookDamage = false;
+
     public boolean keyForward;
     public boolean keyBack;
     public boolean keyLeft;
@@ -727,6 +729,7 @@ public class Agent {
         if(this.onGround && !this.input.sneaking) {
             if(block instanceof MagmaBlock) {
                 //damage the entity
+                likelyTookDamage = true;
             } else if(block instanceof SlimeBlock) {
                 double d = Math.abs(this.velY);
 
@@ -990,6 +993,7 @@ public class Agent {
         int i = this.computeFallDamage(fallDistance, damageMultiplier);
 
         if(i > 0) {
+            likelyTookDamage = true;
             //this.damage(DamageSource.FALL, i);
             return true;
         }
@@ -1016,6 +1020,7 @@ public class Agent {
 
                         if(state.getBlock() instanceof AbstractFireBlock) {
                             //damage the entity
+                            likelyTookDamage = true;
                         } else if(state.getBlock() instanceof AbstractPressurePlateBlock) {
                             //change block state
                         } else if(state.getBlock() instanceof BubbleColumnBlock) {
@@ -1030,10 +1035,13 @@ public class Agent {
                             fallDistance = 0;
                         } else if(state.getBlock() instanceof CactusBlock) {
                             //damage the entity
+                            likelyTookDamage = true;
                         } else if(state.getBlock() instanceof CampfireBlock) {
                             //damage the entity
+                            likelyTookDamage = true;
                         } else if(state.getBlock() instanceof CampfireBlock) {
                             //damage the entity
+                            likelyTookDamage = true;
                         } else if(state.getBlock() instanceof CauldronBlock) {
                             //extinguish the entity
                         } else if(state.getBlock() instanceof CobwebBlock) {
@@ -1058,10 +1066,12 @@ public class Agent {
                             this.mulX = 0.8f; this.mulY = 0.75D; this.mulZ = 0.8F;
                             this.fallDistance = 0;
                             //damage the entity
+                            likelyTookDamage = true;
                         } else if(state.getBlock() instanceof TripwireBlock) {
                             //change block state
                         } else if(state.getBlock() instanceof WitherRoseBlock) {
                             //damage the entity
+                            likelyTookDamage = true;
                         }else if (state.getBlock() instanceof PowderSnowBlock) {
                             //this doesnt completely work, but its enough to keep it out of the snow
                             //TODO finish powderSnow sim

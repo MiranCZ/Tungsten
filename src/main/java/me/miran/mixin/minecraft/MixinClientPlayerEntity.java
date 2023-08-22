@@ -38,7 +38,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
 		if(!this.getAbilities().flying) {
 			Agent.INSTANCE = Agent.of((ClientPlayerEntity)(Object)this);
-		//	Agent.INSTANCE.tick(this.world);
+			Agent.INSTANCE.tick(this.world);
 		}
 
 		if(Main.startPathing) {
