@@ -5,6 +5,8 @@ import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.utils.BetterBlockPos;
 import me.miran.Main;
 import me.miran.agent.Agent;
+import me.miran.executors.ExecutionManager;
+import me.miran.executors.PathExecutor;
 import me.miran.path.calculators.BaritoneCalculator;
 import me.miran.path.calculators.HeuristicCalculator;
 import me.miran.render.Color;
@@ -35,20 +37,21 @@ public class PathFinder {
 	}
 
 
-	public static void findAndSetPathAsync(WorldView world, Vec3d target) {
+	public static void findAndSetPathAsync(WorldView world, Vec3d target,PathExecutor pathExecutor) {
 		if(running)return;
 		running = true;
 
 		BaritonePathFinder.initContext();
 		nodesExplored = 0;
 
+
 		new Thread(()-> {
-			findThread(world, target);
+			findThread(world, target,pathExecutor);
 			running = false;
 		}).start();
 	}
 
-	private static void findThread(WorldView world, Vec3d target) {
+	private static void findThread(WorldView world, Vec3d target, PathExecutor pathExecutor) {
 		if (MinecraftClient.getInstance().player == null) return;
 
 		long startMillis = System.currentTimeMillis();
@@ -86,6 +89,8 @@ public class PathFinder {
 
 				HeuristicCalculator calculator = new BaritoneCalculator(positions.subList(i,nextI));
 				List<Node> pathSection = search(world,sectionTarget , new Node(null,agent , null, 0), 100, calculator,1);
+				if (!running) return;
+
 				if (prevNode != null) {
 					pathSection.remove(0);
 				}
@@ -96,12 +101,13 @@ public class PathFinder {
 				pathSection.get(0).parent = prevNode;
 
 				path.addAll(pathSection);
-				Main.EXECUTOR.renderCurrentPath();
+				pathExecutor.renderCurrentPath();
 				player.sendMessage(Text.of("Section "+sectionNum +" finished ("+ (System.currentTimeMillis()-millis)+"ms) " + pathSection.size() ));
 
-				if (path.size() > 40 && !set) {
+				if ((path.size() > 40 && !set) || (!set && nextI >= positions.size())) {
 					set = true;
-					Main.EXECUTOR.setPath(path);
+					pathExecutor.setPath(path);
+					ExecutionManager.addExecutor(pathExecutor);
 				}
 				prevNode = pathSection.get(pathSection.size()-1);
 				agent = prevNode.agent;

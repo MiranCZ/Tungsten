@@ -2,6 +2,7 @@ package me.miran.path;
 
 import me.miran.Main;
 import me.miran.agent.Agent;
+import me.miran.executors.PathExecutor;
 import me.miran.path.calculators.Calculators;
 import me.miran.render.Color;
 import net.minecraft.client.MinecraftClient;
@@ -20,20 +21,20 @@ public class PathRebuilder {
 
     private static boolean running = false;
 
-    public static void calculateContinuedPathWithMismatch(WorldView world, final List<Node> path, int tick) {
+    public static void calculateContinuedPathWithMismatch(WorldView world, final List<Node> path, int tick, PathExecutor pathExecutor) {
         if (running) return;
         running = true;
 
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Main.EXECUTOR.calculating = true;
+                pathExecutor.calculating = true;
                 try {
                     runSearch();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                Main.EXECUTOR.calculating = false;
+                pathExecutor.calculating = false;
                 running = false;
             }
 
@@ -101,7 +102,7 @@ public class PathRebuilder {
                 }
                 Collections.reverse(l);
 
-                Main.EXECUTOR.setPath(l);
+                pathExecutor.setPath(l);
                 Main.RENDERERS.clear();
             }
 

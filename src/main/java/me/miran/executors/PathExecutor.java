@@ -1,6 +1,8 @@
-package me.miran.path;
+package me.miran.executors;
 
 import me.miran.Main;
+import me.miran.path.Node;
+import me.miran.path.PathRebuilder;
 import me.miran.render.Cuboid;
 import me.miran.render.Line;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -11,13 +13,13 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.List;
 
-public class PathExecutor {
+public class PathExecutor extends InputExecutor {
 
     protected List<Node> path;
     protected int tick = 0;
 
     public PathExecutor() {
-
+		super(0,false);
 	}
 
 	public void setPath(List<Node> path) {
@@ -67,7 +69,7 @@ public class PathExecutor {
 					   player.sendMessage(Text.literal("Something went wrong... recalculating path!").formatted(Formatting.AQUA));
 					   recalculationMessageCooldown = 10;//prevents from spamming the message
 				   }
-				   PathRebuilder.calculateContinuedPathWithMismatch(player.getWorld(),path,tick);
+				   PathRebuilder.calculateContinuedPathWithMismatch(player.getWorld(),path,tick,this);
 				   return;
 			   }
 		    }
