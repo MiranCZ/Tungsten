@@ -41,7 +41,6 @@ public class Main implements ModInitializer {
 		CommandRegistrationCallback.EVENT.register(new BridgeCmd());
 		CommandRegistrationCallback.EVENT.register(new RecordPathCommand());
 	}
-	public static boolean bridge = false;
 
 	private void setupBaritoneSettings () {
 		Settings settings = BaritoneAPI.getSettings();

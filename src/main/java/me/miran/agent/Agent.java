@@ -4,8 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
-import me.miran.mixin.minecraft.AccessorEntity;
-import me.miran.mixin.minecraft.AccessorLivingEntity;
+import me.miran.mixin.minecraft.EntityAccessor;
+import me.miran.mixin.minecraft.LivingEntityAccessor;
 import me.miran.path.PathInput;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
@@ -1310,16 +1310,16 @@ public class Agent {
                 player.getVelocity().z == this.velZ ? "z" : this.velZ));
         }
 
-        if(this.mulX != ((AccessorEntity)player).getMovementMultiplier().x
-            || this.mulY != ((AccessorEntity)player).getMovementMultiplier().y
-            || this.mulZ != ((AccessorEntity)player).getMovementMultiplier().z) {
+        if(this.mulX != ((EntityAccessor)player).getMovementMultiplier().x
+            || this.mulY != ((EntityAccessor)player).getMovementMultiplier().y
+            || this.mulZ != ((EntityAccessor)player).getMovementMultiplier().z) {
             values.add(String.format("Movement Multiplier mismatch (%s, %s, %s) vs (%s, %s, %s)",
-                ((AccessorEntity)player).getMovementMultiplier().x,
-                ((AccessorEntity)player).getMovementMultiplier().y,
-                ((AccessorEntity)player).getMovementMultiplier().z,
-                ((AccessorEntity)player).getMovementMultiplier().x == this.mulX ? "x" : this.mulX,
-                ((AccessorEntity)player).getMovementMultiplier().y == this.mulY ? "y" : this.mulY,
-                ((AccessorEntity)player).getMovementMultiplier().z == this.mulZ ? "z" : this.mulZ));
+                ((EntityAccessor)player).getMovementMultiplier().x,
+                ((EntityAccessor)player).getMovementMultiplier().y,
+                ((EntityAccessor)player).getMovementMultiplier().z,
+                ((EntityAccessor)player).getMovementMultiplier().x == this.mulX ? "x" : this.mulX,
+                ((EntityAccessor)player).getMovementMultiplier().y == this.mulY ? "y" : this.mulY,
+                ((EntityAccessor)player).getMovementMultiplier().z == this.mulZ ? "z" : this.mulZ));
         }
 
         if(this.forwardSpeed != player.forwardSpeed || this.sidewaysSpeed != player.sidewaysSpeed || this.upwardSpeed != player.upwardSpeed) {
@@ -1380,24 +1380,24 @@ public class Agent {
             values.add(String.format("Soft Collision mismatch %s vs %s", player.collidedSoftly, this.collidedSoftly));
         }
 
-        if(this.jumping != ((AccessorLivingEntity)player).getJumping()) {
-            values.add(String.format("Jumping mismatch %s vs %s", ((AccessorLivingEntity)player).getJumping(), this.jumping));
+        if(this.jumping != ((LivingEntityAccessor)player).getJumping()) {
+            values.add(String.format("Jumping mismatch %s vs %s", ((LivingEntityAccessor)player).getJumping(), this.jumping));
         }
 
-        if(this.jumpingCooldown != ((AccessorLivingEntity)player).getJumpingCooldown()) {
-            values.add(String.format("Jumping Cooldown mismatch %s vs %s", ((AccessorLivingEntity)player).getJumpingCooldown(), this.jumpingCooldown));
+        if(this.jumpingCooldown != ((LivingEntityAccessor)player).getJumpingCooldown()) {
+            values.add(String.format("Jumping Cooldown mismatch %s vs %s", ((LivingEntityAccessor)player).getJumpingCooldown(), this.jumpingCooldown));
         }
 
         if(this.airStrafingSpeed != player.airStrafingSpeed) {
             values.add(String.format("Air Strafe Speed mismatch %s vs %s", player.airStrafingSpeed, this.airStrafingSpeed));
         }
 
-        if(this.firstUpdate != ((AccessorEntity)player).getFirstUpdate()) {
-            values.add(String.format("First Update mismatch %s vs %s", ((AccessorEntity)player).getFirstUpdate(), this.firstUpdate));
+        if(this.firstUpdate != ((EntityAccessor)player).getFirstUpdate()) {
+            values.add(String.format("First Update mismatch %s vs %s", ((EntityAccessor)player).getFirstUpdate(), this.firstUpdate));
         }
 
-        if(!this.submergedFluids.equals(((AccessorEntity)player).getSubmergedFluidTag())) {
-            values.add(String.format("Submerged Fluids mismatch %s vs %s", ((AccessorEntity)player).getSubmergedFluidTag(), this.submergedFluids));
+        if(!this.submergedFluids.equals(((EntityAccessor)player).getSubmergedFluidTag())) {
+            values.add(String.format("Submerged Fluids mismatch %s vs %s", ((EntityAccessor)player).getSubmergedFluidTag(), this.submergedFluids));
         }
 
         if(!values.isEmpty()) {
@@ -1448,13 +1448,13 @@ public class Agent {
         agent.velX = player.getVelocity().x;
         agent.velY = player.getVelocity().y;
         agent.velZ = player.getVelocity().z;
-        agent.mulX = ((AccessorEntity)player).getMovementMultiplier().x;
-        agent.mulY = ((AccessorEntity)player).getMovementMultiplier().y;
-        agent.mulZ = ((AccessorEntity)player).getMovementMultiplier().z;
+        agent.mulX = ((EntityAccessor)player).getMovementMultiplier().x;
+        agent.mulY = ((EntityAccessor)player).getMovementMultiplier().y;
+        agent.mulZ = ((EntityAccessor)player).getMovementMultiplier().z;
         agent.fluidHeight.put(FluidTags.WATER, player.getFluidHeight(FluidTags.WATER));
         agent.fluidHeight.put(FluidTags.LAVA, player.getFluidHeight(FluidTags.LAVA));
-        agent.submergedFluids.addAll(((AccessorEntity)player).getSubmergedFluidTag());
-        agent.firstUpdate = ((AccessorEntity)player).getFirstUpdate();
+        agent.submergedFluids.addAll(((EntityAccessor)player).getSubmergedFluidTag());
+        agent.firstUpdate = ((EntityAccessor)player).getFirstUpdate();
         agent.box = player.getBoundingBox();
         agent.dimensions = player.getDimensions(player.getPose());
         agent.standingEyeHeight = player.getStandingEyeHeight();
@@ -1471,7 +1471,7 @@ public class Agent {
         agent.horizontalCollision = player.horizontalCollision;
         agent.verticalCollision = player.verticalCollision;
         agent.collidedSoftly = player.collidedSoftly;
-        agent.jumping = ((AccessorLivingEntity)player).getJumping();
+        agent.jumping = ((LivingEntityAccessor)player).getJumping();
         agent.speed = player.hasStatusEffect(StatusEffects.SPEED) ? player.getStatusEffect(StatusEffects.SPEED).getAmplifier() : -1;
         agent.blindness = player.hasStatusEffect(StatusEffects.BLINDNESS) ? player.getStatusEffect(StatusEffects.BLINDNESS).getAmplifier() : -1;
         agent.jumpBoost = player.hasStatusEffect(StatusEffects.JUMP_BOOST) ? player.getStatusEffect(StatusEffects.JUMP_BOOST).getAmplifier() : -1;
@@ -1480,7 +1480,7 @@ public class Agent {
         agent.levitation = player.hasStatusEffect(StatusEffects.LEVITATION) ? player.getStatusEffect(StatusEffects.LEVITATION).getAmplifier() : -1;
         agent.movementSpeed = player.getMovementSpeed();
         agent.airStrafingSpeed = player.airStrafingSpeed;
-        agent.jumpingCooldown = ((AccessorLivingEntity)player).getJumpingCooldown();
+        agent.jumpingCooldown = ((LivingEntityAccessor)player).getJumpingCooldown();
 
         //TODO: frame.ticksToNextAutojump
         return agent;

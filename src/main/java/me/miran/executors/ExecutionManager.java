@@ -15,6 +15,7 @@ public class ExecutionManager {
     private static final Queue<InputExecutor> executorQueue = new PriorityQueue<>(Comparator.comparingInt(executor ->executor.priority));
 
     public static void addExecutor(InputExecutor inputExecutor) {
+        System.out.println("adding executor " + inputExecutor);
         if (executor == null) {
             executor = inputExecutor;
             return;
@@ -40,7 +41,7 @@ public class ExecutionManager {
 
             if (!executor.isRunning()) {
                 executor = executorQueue.poll();
-                resetInputs();
+                InputExecutor.resetKeys();
             }
         }
     }
@@ -49,18 +50,7 @@ public class ExecutionManager {
         executor = null;
         executorQueue.clear();
 
-        resetInputs();
-    }
-
-    private static void resetInputs() {
-        GameOptions options = MinecraftClient.getInstance().options;
-        options.forwardKey.setPressed(false);
-        options.backKey.setPressed(false);
-        options.leftKey.setPressed(false);
-        options.rightKey.setPressed(false);
-        options.jumpKey.setPressed(false);
-        options.sneakKey.setPressed(false);
-        options.sprintKey.setPressed(false);
+        InputExecutor.resetKeys();
     }
 
     @Nullable

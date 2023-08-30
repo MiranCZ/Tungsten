@@ -13,8 +13,6 @@ import me.miran.render.Line;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.option.GameOptions;
-import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.encryption.PlayerPublicKey;
 import net.minecraft.sound.SoundEvent;
@@ -29,10 +27,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import javax.swing.text.JTextComponent;
-
 @Mixin(ClientPlayerEntity.class)
-public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
+public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity {
 
     @Shadow
     public abstract void tickRiding();
@@ -46,71 +42,16 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
     @Shadow @Final public static Logger field_39078;
 
-    public MixinClientPlayerEntity(ClientWorld world, GameProfile profile, @Nullable PlayerPublicKey publicKey) {
+    public ClientPlayerEntityMixin(ClientWorld world, GameProfile profile, @Nullable PlayerPublicKey publicKey) {
         super(world, profile, publicKey);
     }
 
     private Vec3d prevPos = new Vec3d(0, 0, 0);
 
-    private boolean left = false;
 
     @Inject(method = "tick", at = @At("HEAD"))
     public void start(CallbackInfo ci) {
-      //  KeyBinding.onKeyPressed(MinecraftClient.getInstance().options.useKey.getDefaultKey());
-        if (Main.bridge) {
-            KeyBinding.onKeyPressed(MinecraftClient.getInstance().options.useKey.getDefaultKey());
-
-            GameOptions options = MinecraftClient.getInstance().options;
-            ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            options.backKey.setPressed(true);
-
-
-            boolean xCords = Math.floor(player.getZ()) == Main.TARGET.z;
-            double dist = xCords ? player.getZ() - Main.TARGET.z : player.getX() - Main.TARGET.x;
-
-            player.prevYaw = player.getYaw();
-            player.prevPitch = player.getPitch();
-            double d;
-            if (xCords) {
-               d = player.getX()-Main.TARGET.x;
-                if (d < 0) {
-                    player.setYaw(90);
-                } else {
-                    player.setYaw(-90);
-                }
-            } else {
-                d = player.getZ()-Main.TARGET.z;
-                if (d < 0) {
-                    player.setYaw(180);
-                } else {
-                    player.setYaw(0);
-                }
-                d=-d;
-            }
-            if (Math.abs(d) < 0.7) {
-                Main.bridge = false;
-                options.leftKey.setPressed(false);
-                options.rightKey.setPressed(false);
-                options.backKey.setPressed(false);
-                return;
-            }
-
-            player.setPitch(80.5f);
-
-
-            if (dist < 0.4) {
-                left = d < 0;
-            } else if (dist > 0.6) {
-                left = d > 0;
-            }
-
-
-            options.leftKey.setPressed(left);
-            options.rightKey.setPressed(!left);
-
-        }
-
-
+     //   KeyBinding.onKeyPressed(MinecraftClient.getInstance().options.useKey.getDefaultKey());
         ExecutionManager.tick((ClientPlayerEntity) (Object) this, MinecraftClient.getInstance().options);
 
         if (!this.getAbilities().flying) {

@@ -5,14 +5,15 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "baritone.PathingBehaviourInvoker",
-    "minecraft.MixinShapeContext"
+    "minecraft.ShapeContextMixin"
   ],
   "client": [
-    "minecraft.AccessorEntity",
-    "minecraft.AccessorLivingEntity",
-    "minecraft.MixinClientPlayerEntity",
-    "minecraft.MixinDebugRenderer",
-    "minecraft.MixinMinecraftClient"
+    "minecraft.ClientPlayerEntityMixin",
+    "minecraft.DebugRendererMixin",
+    "minecraft.EntityAccessor",
+    "minecraft.KeyBindingAccessor",
+    "minecraft.LivingEntityAccessor",
+    "minecraft.MinecraftClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

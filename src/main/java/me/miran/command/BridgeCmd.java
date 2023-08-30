@@ -2,12 +2,13 @@ package me.miran.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import me.miran.Main;
+import me.miran.executors.bridge.BreezilyBridgeExecutor;
+import me.miran.executors.bridge.DiagonalGodBridgeExecutor;
+import me.miran.executors.ExecutionManager;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 public class BridgeCmd implements CommandRegistrationCallback {
 
@@ -17,7 +18,8 @@ public class BridgeCmd implements CommandRegistrationCallback {
     }
 
     private int run(ServerCommandSource source) {
-        Main.bridge = !Main.bridge;
+        ExecutionManager.addExecutor(new DiagonalGodBridgeExecutor(1,true, Main.TARGET));
+        ExecutionManager.addExecutor(new BreezilyBridgeExecutor(0,true,Main.TARGET));
 
         return 0;
     }

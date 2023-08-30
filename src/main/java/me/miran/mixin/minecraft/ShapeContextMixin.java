@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ShapeContext.class)
-public interface MixinShapeContext {
+public interface ShapeContextMixin {
 
 	@Inject(method = "of", at = @At("HEAD"), cancellable = true)
 	private static void of(Entity entity, CallbackInfoReturnable<ShapeContext> ci) {
