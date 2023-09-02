@@ -45,7 +45,7 @@ public class Main implements ModInitializer {
 	private void setupBaritoneSettings () {
 		Settings settings = BaritoneAPI.getSettings();
 
-		settings.allowBreak.value = false;
+		settings.allowBreak.value = true;
 		settings.allowPlace.value = true;
 		settings.allowParkourPlace.value = false;
 		settings.renderGoal.value = false;
@@ -58,4 +58,4 @@ public class Main implements ModInitializer {
 		targetRenderer = new Cuboid(new Vec3d(TARGET.x-0.1,TARGET.y-0.1,TARGET.z-0.1),new Vec3d(1.2f,1.2f,1.2f),new Color(255,0,0));
 	}
 
-}//https://www.youtube.com/watch?v=ZnDityvXlf4 - diag godbridge tutorial
+}

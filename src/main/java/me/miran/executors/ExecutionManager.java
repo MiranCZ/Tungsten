@@ -12,10 +12,9 @@ import java.util.Queue;
 public class ExecutionManager {
 
     private static InputExecutor executor = null;
-    private static final Queue<InputExecutor> executorQueue = new PriorityQueue<>(Comparator.comparingInt(executor ->executor.priority));
+    private static final Queue<InputExecutor> executorQueue = new PriorityQueue<>(Comparator.comparingInt(executor ->-executor.priority));
 
     public static void addExecutor(InputExecutor inputExecutor) {
-        System.out.println("adding executor " + inputExecutor);
         if (executor == null) {
             executor = inputExecutor;
             return;
@@ -36,10 +35,11 @@ public class ExecutionManager {
     }
 
     public static void tick(ClientPlayerEntity player, GameOptions options) {
-        if (executor != null) {
-            executor.tick(player, options);
+        InputExecutor syncExecutor = executor;//should prevent race conditions
+        if (syncExecutor != null) {
+            syncExecutor.tick(player, options);
 
-            if (!executor.isRunning()) {
+            if (!syncExecutor.isRunning()) {
                 executor = executorQueue.poll();
                 InputExecutor.resetKeys();
             }
