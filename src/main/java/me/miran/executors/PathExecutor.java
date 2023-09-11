@@ -1,7 +1,9 @@
 package me.miran.executors;
 
 import me.miran.Main;
+import me.miran.command.StopCommand;
 import me.miran.path.Node;
+import me.miran.path.PathFinder;
 import me.miran.path.PathRebuilder;
 import me.miran.render.Cuboid;
 import me.miran.render.Line;
@@ -20,6 +22,10 @@ public class PathExecutor extends InputExecutor {
 
     public PathExecutor() {
 		super(0,false);
+	}
+
+	public PathExecutor(int priority, boolean queuedExecutor) {
+		super(priority, queuedExecutor);
 	}
 
 	public void setPath(List<Node> path) {
@@ -69,7 +75,13 @@ public class PathExecutor extends InputExecutor {
 					   player.sendMessage(Text.literal("Something went wrong... recalculating path!").formatted(Formatting.AQUA));
 					   recalculationMessageCooldown = 10;//prevents from spamming the message
 				   }
-				   PathRebuilder.calculateContinuedPathWithMismatch(player.getWorld(),path,tick,this);
+				   //PathRebuilder.calculateContinuedPathWithMismatch(player.getWorld(),path,tick,this);
+
+				   ExecutionManager.stopAll();
+				   PathFinder.findAndSetPathAsync(player.getWorld(),Main.TARGET,this);
+				   end(options);
+
+
 				   return;
 			   }
 		    }
