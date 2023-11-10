@@ -6,17 +6,18 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
 /**
  * just a dummy class when baritone is executing
  */
-public class BaritoneExecutor extends InputExecutor{
+public class BaritoneExecutor extends InputExecutor implements TargetExecutor{
 
-    private final Vec3i target;
+    private final BlockPos target;
     private boolean started = false;
-    public BaritoneExecutor(int priority, boolean queuedExecutor, Vec3i target) {
+    public BaritoneExecutor(int priority, boolean queuedExecutor, BlockPos target) {
         super(priority, queuedExecutor);
         this.target = target;
     }
@@ -26,7 +27,7 @@ public class BaritoneExecutor extends InputExecutor{
         if (!started) {
             player.sendMessage(Text.of("baritone path"));
             started =true;
-            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(target.getX(),target.getY(),target.getZ()));
+            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(target));
         }
     }
 
@@ -34,5 +35,9 @@ public class BaritoneExecutor extends InputExecutor{
     public boolean isRunning() {
         if (!started) return true;
         return  BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing();
+    }
+
+    public Vec3i getTarget() {
+        return target;
     }
 }

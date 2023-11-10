@@ -3,16 +3,12 @@ package me.miran.path;
 import baritone.api.BaritoneAPI;
 import baritone.api.pathing.calc.IPath;
 import baritone.api.pathing.goals.GoalBlock;
-import baritone.api.pathing.movement.IMovement;
 import baritone.api.utils.BetterBlockPos;
 import baritone.bw;
 import baritone.em;
 import me.miran.Main;
 import me.miran.agent.Agent;
-import me.miran.executors.BaritoneExecutor;
-import me.miran.executors.ExecutionManager;
-import me.miran.executors.PathExecutor;
-import me.miran.executors.QueuedPathExecutor;
+import me.miran.executors.*;
 import me.miran.path.calculators.BaritoneCalculator;
 import me.miran.path.calculators.HeuristicCalculator;
 import me.miran.render.Color;
@@ -25,7 +21,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.WorldView;
+import net.minecraft.world.World;
 
 import java.util.*;
 
@@ -35,7 +31,12 @@ public class PathFinder {
 
     }
 
-    private static em bsi;
+    public static void init() {
+        if (bsi == null)
+            bsi= new em(BaritoneAPI.getProvider().getPrimaryBaritone().getPlayerContext());
+    }
+
+    public static em bsi = null;
 
 
     private static boolean running = false;
@@ -49,7 +50,7 @@ public class PathFinder {
     }
 
 
-    public static void findAndSetPathAsync(WorldView world, Vec3d target, PathExecutor pathExecutor) {
+    public static void findAndSetPathAsync(World world, Vec3i target, PathExecutor pathExecutor) {
         if (running) return;
         bsi = new em(BaritoneAPI.getProvider().getPrimaryBaritone().getPlayerContext());
         running = true;
@@ -60,66 +61,40 @@ public class PathFinder {
 
         new Thread(() -> {
             PlayerEntity player = MinecraftClient.getInstance().player;
+            player.sendMessage(Text.of("Thread started..."));
 
-            IPath baritonePath = calculateBaritonePath(player, new BetterBlockPos(target.x, target.y, target.z));
+            IPath baritonePath = calculateBaritonePath(player, new BetterBlockPos(target.getX(),target.getY(),target.getZ()));
             if (baritonePath == null) {
                 player.sendMessage(Text.literal("Path was not found :(").formatted(Formatting.RED));
                 running = false;
                 return;
             }
 
-            HashSet<BlockPos> toPlace = new HashSet<>();
-            HashSet<BlockPos> toBreak = new HashSet<>();
+            HashSet<BlockPos> toPlaceMap = new HashSet<>();
+            HashSet<BlockPos> toBreakMap = new HashSet<>();
 
-            boolean called = false;
-            boolean baritone = false;
-            int priority = 10;
-
-            List<BetterBlockPos> positions = baritonePath.positions();
             for (int i = 0; i < baritonePath.movements().size(); i++) {
                 bw m = (bw) baritonePath.movements().get(i);
-                toBreak.addAll(m.a(bsi));
-                toPlace.addAll(m.b(bsi));
-
-                if (!m.a(bsi).isEmpty() || !m.b(bsi).isEmpty()) {
-
-                    if (!baritone) {
-                        if (!called) {
-                            called = true;
-                            findThread(world, positions.subList(0, i + 1), new PathExecutor(priority--, false));
-                        } else {
-                            BlockPos src = m.getSrc();
-                            ExecutionManager.addExecutor(new QueuedPathExecutor(priority--,new Vec3d(src.getX(),src.getY(),src.getZ())));
-                        }
-                    }
-                    baritone = true;
-                } else {
-                     if (baritone) {
-                         BlockPos pos = m.getSrc();
-                         ExecutionManager.addExecutor(new BaritoneExecutor(priority--, true, new Vec3i(pos.getX(), pos.getY(), pos.getZ())));
-                         baritone = false;
-                     }
-                }
+                toBreakMap.addAll(m.a(bsi));
+                toPlaceMap.addAll(m.b(bsi));
             }
-            renderBaritonePath(baritonePath, toPlace, toBreak);
 
-            if (!baritone) {
-                if (!called) {
-                    findThread(world, positions, pathExecutor);
-                } else {
-                    ExecutionManager.addExecutor(new QueuedPathExecutor(priority--,target));
-                }
-            } else {
-                ExecutionManager.addExecutor(new BaritoneExecutor(priority--, true, new Vec3i(target.x,target.y,target.z)));
 
+            renderBaritonePath(baritonePath, toPlaceMap, toBreakMap);
+
+            List<BlockPos> toPlace = new ArrayList<>();
+            for (BlockPos pos : toPlaceMap) {
+                toPlace.add(new BlockPos(pos.getX(),pos.getY(),pos.getZ()));
             }
+
+            findThread(world,baritonePath.positions(),new PathExecutor(new BlockPos(target.getX(),target.getY(),target.getZ())),toPlace);
 
             running = false;
         }).start();
     }
 
 
-    private static void findThread(WorldView world, List<BetterBlockPos> positions, PathExecutor pathExecutor) {
+    private static void findThread(World world, List<BetterBlockPos> positions, PathExecutor pathExecutor, List<BlockPos> toPlace) {
         if (MinecraftClient.getInstance().player == null) return;
 
         long startMillis = System.currentTimeMillis();
@@ -146,7 +121,7 @@ public class PathFinder {
                 Vec3d sectionTarget = new Vec3d(sectionTargetPos.getX(), sectionTargetPos.getY(), sectionTargetPos.getZ());
 
                 HeuristicCalculator calculator = new BaritoneCalculator(positions.subList(i, nextI));
-                List<Node> pathSection = search(world, sectionTarget, new Node(null, agent, null, 0), 100, calculator, 1);
+                List<Node> pathSection = search(world, sectionTarget, new Node(null, agent, null, 0), 100, calculator, 1, toPlace);
                 if (!running) return;
 
                 if (prevNode != null) {
@@ -155,7 +130,7 @@ public class PathFinder {
                 if (pathSection.size() > 20 && nextI < positions.size()) {
                     pathSection = pathSection.subList(0, pathSection.size() - 20);
                 }
-
+                //if (pathSection.isEmpty()) continue;
                 pathSection.get(0).parent = prevNode;
 
                 path.addAll(pathSection);
@@ -221,16 +196,16 @@ public class PathFinder {
         }
     }
 
-    public static List<Node> findPathSync(WorldView world, Vec3d target, Node start, int blockLimit, HeuristicCalculator calculator, double neededDist) {
+    public static List<Node> findPathSync(World world, Vec3d target, Node start, int blockLimit, HeuristicCalculator calculator, double neededDist) {
         running = true;
-        List<Node> list = search(world, target, start, blockLimit, calculator, neededDist);
+        List<Node> list = search(world, target, start, blockLimit, calculator, neededDist, new ArrayList<>());
         running = false;
         return list;
     }
 
     private static int nodesExplored = 0;
 
-    private static List<Node> search(WorldView world, Vec3d target, Node start, int blockLimit, HeuristicCalculator calculator, double neededDist) {
+    private static List<Node> search(World world, Vec3d target, Node start, int blockLimit, HeuristicCalculator calculator, double neededDist, List<BlockPos> toPlace) {
         assert blockLimit < Short.MAX_VALUE;
 
         SearchRenderer renderer = new SearchRenderer();
@@ -272,7 +247,7 @@ public class PathFinder {
                 break;
             }
 
-            for (Node child : next.getChildren(world)) {
+            for (Node child : next.getChildren(world,toPlace)) {
                 if (child.agent.touchingWater || closed.contains(child.agent.getPos())) continue;
 
                 renderer.addNode(child);
@@ -299,7 +274,7 @@ public class PathFinder {
 
             if (blocksCount > 600) {
                 renderer.endRender();
-                path = recalculatePathWithHigherBlockLimit(world, target, start, blockLimit, calculator);
+                path = recalculatePathWithHigherBlockLimit(world, target, start, blockLimit, calculator,toPlace);
                 break;
             }
 
@@ -307,19 +282,19 @@ public class PathFinder {
         renderer.endRender();
 
         if (path == null) {
-            path = recalculatePathWithHigherBlockLimit(world, target, start, blockLimit, calculator);
+            path = recalculatePathWithHigherBlockLimit(world, target, start, blockLimit, calculator,toPlace);
         }
 
         return path;
     }
 
-    private static List<Node> recalculatePathWithHigherBlockLimit(WorldView world, Vec3d target, Node start, int blockLimit, HeuristicCalculator calculator) {
+    private static List<Node> recalculatePathWithHigherBlockLimit(World world, Vec3d target, Node start, int blockLimit, HeuristicCalculator calculator, List<BlockPos> toPlace) {
         if (blockLimit > 2000) {
             return new ArrayList<>();
         }
         blockLimit *= 2;
 
-        return search(world, target, start, blockLimit, calculator, 1);
+        return search(world, target, start, blockLimit, calculator, 1, toPlace);
     }
 
 

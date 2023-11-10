@@ -2,6 +2,8 @@ package me.miran.executors;
 
 import me.miran.Main;
 import me.miran.command.StopCommand;
+import me.miran.command.TargetCommand;
+import me.miran.executors.bridge.BridgeExecutor;
 import me.miran.path.Node;
 import me.miran.path.PathFinder;
 import me.miran.path.PathRebuilder;
@@ -9,23 +11,28 @@ import me.miran.render.Cuboid;
 import me.miran.render.Line;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 
 import java.util.List;
 
-public class PathExecutor extends InputExecutor {
+public class PathExecutor extends InputExecutor implements TargetExecutor {
 
     protected List<Node> path;
     protected int tick = 0;
+	private final Vec3i target;
 
-    public PathExecutor() {
-		super(0,false);
+    public PathExecutor(Vec3i target) {
+		this(target,0,false);
 	}
 
-	public PathExecutor(int priority, boolean queuedExecutor) {
+	public PathExecutor(Vec3i target,int priority, boolean queuedExecutor) {
 		super(priority, queuedExecutor);
+		this.target = target;
 	}
 
 	public void setPath(List<Node> path) {
@@ -78,7 +85,7 @@ public class PathExecutor extends InputExecutor {
 				   //PathRebuilder.calculateContinuedPathWithMismatch(player.getWorld(),path,tick,this);
 
 				   ExecutionManager.stopAll();
-				   PathFinder.findAndSetPathAsync(player.getWorld(),Main.TARGET,this);
+				   PathFinder.findAndSetPathAsync(player.getWorld(),new Vec3i(Main.TARGET.x,Main.TARGET.y,Main.TARGET.z),this);
 				   end(options);
 
 
@@ -101,6 +108,20 @@ public class PathExecutor extends InputExecutor {
 			    player.prevPitch = player.getPitch();
 			    player.setYaw(node.input.yaw);
 			    player.setPitch(node.input.pitch);
+
+				//we just trust the sim that we are placing the right block :d
+				//TODO try to equip block
+				if (node.input.placedBlock != null) {
+					player.sendMessage(Text.of("placing"));
+					BridgeExecutor.placeBlock();
+				}
+
+				/*if (tick+1 < path.size() && path.get(tick+1).input.placedBlock != null) {
+					player.sendMessage(Text.of("placing"));
+					System.out.println("tried to place block");
+					BridgeExecutor.placeBlock();
+				}*/
+
 		    }
 	    }
 
@@ -117,4 +138,8 @@ public class PathExecutor extends InputExecutor {
 		options.sprintKey.setPressed(false);
 	}
 
+	@Override
+	public Vec3i getTarget() {
+		return target;
+	}
 }

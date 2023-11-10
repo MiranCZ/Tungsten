@@ -4,13 +4,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
+import me.miran.WorldMixin;
 import me.miran.mixin.minecraft.EntityAccessor;
 import me.miran.mixin.minecraft.LivingEntityAccessor;
 import me.miran.path.PathInput;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.*;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.HungerManager;
 import net.minecraft.fluid.Fluid;
@@ -26,7 +29,7 @@ import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.RaycastContext;
-import net.minecraft.world.WorldView;
+import net.minecraft.world.World;
 
 import java.util.*;
 
@@ -48,7 +51,6 @@ public class Agent {
         .put(EntityPose.DYING, EntityDimensions.fixed(0.2f, 0.2f)).build();
 
     public boolean likelyTookDamage = false;
-
     public boolean keyForward;
     public boolean keyBack;
     public boolean keyLeft;
@@ -114,6 +116,8 @@ public class Agent {
     public int ticksToNextAutojump;
     private int scannedBlocks;
 
+    public HashMap<BlockPos,BlockState> placedBLocks = null;
+
     public Vec3d getPos() {
         return new Vec3d(this.posX, this.posY, this.posZ);
     }
@@ -134,12 +138,17 @@ public class Agent {
         this.blockZ = MathHelper.floor(z);
     }
 
-    public Agent tick(WorldView world) {
+    public Agent tick(World world) {
+        ((WorldMixin)world).tungsten$setCalcThread(Thread.currentThread());
+        ((WorldMixin)world).tungsten$setBlockList(placedBLocks);
+
+      //  world.setBlockState(new BlockPos(blockX,blockY,blockZ), Blocks.DIAMOND_BLOCK.getDefaultState());
         this.tickPlayer(world);
+        ((WorldMixin)world).tungsten$clear();
         return this;
     }
 
-    public void tickPlayer(WorldView world) {
+    public void tickPlayer(World world) {
         //Sleeping code
         this.updateWaterSubmersionState();
         this.tickLiving(world);
@@ -149,7 +158,7 @@ public class Agent {
         this.updateSize(world);
     }
 
-    private void tickLiving(WorldView world) {
+    private void tickLiving(World world) {
         this.baseTickLiving(world);
         //more sleep stuff
         this.tickMovementClientPlayer(world);
@@ -159,7 +168,7 @@ public class Agent {
         }
     }
 
-    private void baseTickLiving(WorldView world) {
+    private void baseTickLiving(World world) {
         this.baseTickEntity(world);
         //Suffocate in walls
         //Drown in water
@@ -167,7 +176,7 @@ public class Agent {
         //Update potion effects
     }
 
-    private void baseTickEntity(WorldView world) {
+    private void baseTickEntity(World world) {
         this.updateWaterState(world);
         this.updateSubmergedInWaterState(world);
         this.updateSwimming(world);
@@ -183,7 +192,7 @@ public class Agent {
         return this.submergedFluids.contains(tag);
     }
 
-    public boolean updateWaterState(WorldView world) {
+    public boolean updateWaterState(World world) {
         this.fluidHeight.clear();
         this.checkWaterState(world);
         double d = world.getDimension().ultrawarm() ? 0.007D : 0.0023333333333333335D;
@@ -191,7 +200,7 @@ public class Agent {
         return this.touchingWater || bl;
     }
 
-    private void updateSubmergedInWaterState(WorldView world) {
+    private void updateSubmergedInWaterState(World world) {
         this.isSubmergedInWater = this.isSubmergedIn(FluidTags.WATER);
         this.submergedFluids.clear();
         double d = this.getEyeY() - 0.1111111119389534D;
@@ -209,7 +218,7 @@ public class Agent {
         return this.posY + (double)this.standingEyeHeight;
     }
 
-    public void updateSwimming(WorldView world) {
+    public void updateSwimming(World world) {
         if(this.swimming) {
             this.swimming = this.sprinting && this.touchingWater;
         } else {
@@ -222,7 +231,7 @@ public class Agent {
         this.isSubmergedInWater = this.isSubmergedIn(FluidTags.WATER);
     }
 
-    public void updateSize(WorldView world) {
+    public void updateSize(World world) {
         if(!this.wouldPoseNotCollide(world, EntityPose.SWIMMING)) return;
         EntityPose newPose;
 
@@ -255,12 +264,12 @@ public class Agent {
         this.setPose(world, newPose);
     }
 
-    public void setPose(WorldView world, EntityPose pose) {
+    public void setPose(World world, EntityPose pose) {
         this.pose = pose;
         this.calculateDimensions(world);
     }
 
-    public void calculateDimensions(WorldView world) {
+    public void calculateDimensions(World world) {
         EntityDimensions oldDimensions = this.dimensions;
         this.dimensions = POSE_DIMENSIONS.getOrDefault(this.pose, STANDING_DIMENSIONS);
 
@@ -291,7 +300,7 @@ public class Agent {
         };
     }
 
-    public void tickMovementClientPlayer(WorldView world) {
+    public void tickMovementClientPlayer(World world) {
         boolean prevSneaking = this.input.sneaking;
         boolean wasWalking = this.isWalking();
 
@@ -349,7 +358,7 @@ public class Agent {
         this.tickMovementPlayer(world);
     }
 
-    public void tickMovementPlayer(WorldView world) {
+    public void tickMovementPlayer(World world) {
         this.tickMovementLiving(world);
 
         this.airStrafingSpeed = 0.02F;
@@ -359,7 +368,7 @@ public class Agent {
         }
     }
 
-    public void tickMovementLiving(WorldView world) {
+    public void tickMovementLiving(World world) {
         if(this.jumpingCooldown > 0) {
             --this.jumpingCooldown;
         }
@@ -404,7 +413,7 @@ public class Agent {
         this.tickCramming();*/
     }
 
-    public void jump(WorldView world) {
+    public void jump(World world) {
         float newY = this.getJumpVelocity(world);
 
         if(this.jumpBoost >= 0) {
@@ -420,11 +429,11 @@ public class Agent {
         }
     }
 
-    public float getJumpVelocity(WorldView world) {
+    public float getJumpVelocity(World world) {
         return 0.42F * this.getJumpVelocityMultiplier(world);
     }
 
-    public float getJumpVelocityMultiplier(WorldView world) {
+    public float getJumpVelocityMultiplier(World world) {
         BlockPos pos1 = new BlockPos(this.blockX, this.blockY, this.blockZ);
         BlockPos pos2 = new BlockPos(this.blockX, this.box.minY - 0.5000001D, this.blockZ);
         float f = world.getBlockState(pos1).getBlock().getJumpVelocityMultiplier();
@@ -456,7 +465,7 @@ public class Agent {
         this.velZ += forward * (double)g + sideways * (double)f;
     }
 
-    public void travelPlayer(WorldView world) {
+    public void travelPlayer(World world) {
         if(this.swimming) {
             float g = -MathHelper.sin(this.pitch * ((float)Math.PI / 180));
             double h = g < -0.2 ? 0.085 : 0.06;
@@ -471,7 +480,7 @@ public class Agent {
         this.travelLiving(world);
     }
 
-    public void travelLiving(WorldView world) {
+    public void travelLiving(World world) {
         boolean falling = this.velY <= 0.0D;
         double fallSpeed = 0.08D;
 
@@ -598,7 +607,7 @@ public class Agent {
         }
     }
 
-    public double applyMovementInput(WorldView world, float f) {
+    public double applyMovementInput(World world, float f) {
         this.updateVelocity(this.getMovementSpeed(f));
         this.applyClimbingSpeed(world);
 
@@ -619,7 +628,7 @@ public class Agent {
         return this.airStrafingSpeed;
     }
 
-    private void applyClimbingSpeed(WorldView world) {
+    private void applyClimbingSpeed(World world) {
         if(this.isClimbing(world)) {
             this.fallDistance = 0.0f;
             this.velX = MathHelper.clamp(this.velX, -0.15000000596046448D, 0.15000000596046448D);
@@ -634,11 +643,11 @@ public class Agent {
         }
     }
 
-    public Iterable<VoxelShape> getBlockCollisions(WorldView world, Box box) {
+    public Iterable<VoxelShape> getBlockCollisions(World world, Box box) {
         return () -> new AgentBlockCollisions(world, this, box);
     }
 
-    public boolean isSpaceEmpty(WorldView world, Box box) {
+    public boolean isSpaceEmpty(World world, Box box) {
         for(VoxelShape voxelShape : this.getBlockCollisions(world, box)) {
             if(!voxelShape.isEmpty()) {
                 return false;
@@ -648,7 +657,7 @@ public class Agent {
         return world.getEntityCollisions(null, box).isEmpty();
     }
 
-    private boolean doesNotCollide(WorldView world, double offsetX, double offsetY, double offsetZ) {
+    private boolean doesNotCollide(World world, double offsetX, double offsetY, double offsetZ) {
         Box box = this.box.offset(offsetX, offsetY, offsetZ);
         return this.isSpaceEmpty(world, box) && !world.containsFluid(box);
     }
@@ -660,7 +669,7 @@ public class Agent {
         }
     }
 
-    public void move(WorldView world, MovementType type, double movX, double movY, double movZ) {
+    public void move(World world, MovementType type, double movX, double movY, double movZ) {
         //if(type == MovementType.PISTON && (movement = this.adjustMovementForPiston(movement)).equals(Vec3d.ZERO)) {
         //    return;
         //}
@@ -772,7 +781,7 @@ public class Agent {
         return l < 0.13962633907794952D;
     }
 
-    public Vec3d adjustMovementForSneaking(WorldView world, MovementType type, Vec3d movement) {
+    public Vec3d adjustMovementForSneaking(World world, MovementType type, Vec3d movement) {
         if(this.input.sneaking && (type == MovementType.SELF || type == MovementType.PLAYER)
             && (this.onGround || this.fallDistance < this.stepHeight
             && !this.isSpaceEmpty(world, this.box.offset(0.0, this.fallDistance - this.stepHeight, 0.0)))) {
@@ -804,7 +813,7 @@ public class Agent {
         return movement;
     }
 
-    private Vec3d adjustMovementForCollisions(WorldView world, Vec3d movement) {
+    private Vec3d adjustMovementForCollisions(World world, Vec3d movement) {
         Box box = this.box;
         List<VoxelShape> list = world.getEntityCollisions(null, box.stretch(movement));
         Vec3d vec3d = movement.lengthSquared() == 0.0 ? movement : this.adjustMovementForCollisions(movement, box, world, list);
@@ -830,7 +839,7 @@ public class Agent {
         return vec3d;
     }
 
-    public Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, WorldView world, List<VoxelShape> entityCollisions) {
+    public Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, World world, List<VoxelShape> entityCollisions) {
         ImmutableList.Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(entityCollisions.size() + 1);
 
         if(!entityCollisions.isEmpty()) {
@@ -873,13 +882,13 @@ public class Agent {
         return new Vec3d(d, e, f);
     }
 
-    public boolean isClimbing(WorldView world) {
+    public boolean isClimbing(World world) {
         BlockState state = world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ));
         if(state.isIn(BlockTags.CLIMBABLE)) return true;
         return state.getBlock() instanceof TrapdoorBlock && this.canEnterTrapdoor(world, state);
     }
 
-    private boolean canEnterTrapdoor(WorldView world, BlockState trapdoor) {
+    private boolean canEnterTrapdoor(World world, BlockState trapdoor) {
         if(!trapdoor.get(TrapdoorBlock.OPEN)) return false;
 
         BlockState ladder = world.getBlockState(new BlockPos(this.blockX, this.blockY - 1, this.blockZ));
@@ -887,7 +896,7 @@ public class Agent {
         return ladder.isOf(Blocks.LADDER) && ladder.get(LadderBlock.FACING) == trapdoor.get(TrapdoorBlock.FACING);
     }
 
-    void checkWaterState(WorldView world) {
+    void checkWaterState(World world) {
         if(this.updateMovementInFluid(world, FluidTags.WATER, 0.014D)) {
             this.fallDistance = 0.0F;
             this.touchingWater = true;
@@ -896,7 +905,7 @@ public class Agent {
         }
     }
 
-    public boolean updateMovementInFluid(WorldView world, TagKey<Fluid> tag, double d) {
+    public boolean updateMovementInFluid(World world, TagKey<Fluid> tag, double d) {
         int n;
         Box box = this.box.contract(0.001D);
         int i = MathHelper.floor(box.minX);
@@ -958,7 +967,7 @@ public class Agent {
         return bl2;
     }
 
-    public void fall(WorldView world, double heightDifference, BlockState landedState) {
+    public void fall(World world, double heightDifference, BlockState landedState) {
         if(!this.touchingWater) {
             this.checkWaterState(world);
         }
@@ -1006,7 +1015,7 @@ public class Agent {
         return MathHelper.ceil((fallDistance - 3.0f - f) * damageMultiplier);
     }
 
-    public void checkBlockCollision(WorldView world) {
+    public void checkBlockCollision(World world) {
         BlockPos blockPos = new BlockPos(this.box.minX + 0.001, this.box.minY + 0.001, this.box.minZ + 0.001);
         BlockPos blockPos2 = new BlockPos(this.box.maxX - 0.001, this.box.maxY - 0.001, this.box.maxZ - 0.001);
         BlockPos.Mutable pos = new BlockPos.Mutable();
@@ -1095,7 +1104,7 @@ public class Agent {
         return d + 1.0E-7D > f || e + 1.0E-7D > f;
     }
 
-    public float getVelocityMultiplier(WorldView world) {
+    public float getVelocityMultiplier(World world) {
         if(this.fallFlying) return 1.0F;
 
         Block block = world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ)).getBlock();
@@ -1107,7 +1116,7 @@ public class Agent {
         return (double)blockMult == 1.0D ? world.getBlockState(pos).getBlock().getVelocityMultiplier() : blockMult;
     }
 
-    public BlockPos getLandingPos(WorldView world) {
+    public BlockPos getLandingPos(World world) {
         BlockPos pos = new BlockPos(this.blockX, MathHelper.floor(this.posY - (double)0.2F), this.blockZ);
 
         if(!world.getBlockState(pos).isAir()) {
@@ -1135,11 +1144,11 @@ public class Agent {
         return new Box(min, max);
     }
 
-    public boolean wouldPoseNotCollide(WorldView world, EntityPose pose) {
+    public boolean wouldPoseNotCollide(World world, EntityPose pose) {
         return this.isSpaceEmpty(world, this.calculateBoundsForPose(pose).contract(1.0E-7));
     }
 
-    private void pushOutOfBlocks(WorldView world, double x, double d) {
+    private void pushOutOfBlocks(World world, double x, double d) {
         Direction[] directions = new Direction[] { Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH };
         BlockPos blockPos = new BlockPos(x, this.posY, d);
         if (!this.wouldCollideAt(world, blockPos)) {
@@ -1168,7 +1177,7 @@ public class Agent {
         }
     }
 
-    public boolean canCollide(WorldView world, Box box) {
+    public boolean canCollide(World world, Box box) {
         AgentBlockCollisions collisions = new AgentBlockCollisions(world, this, box, true);
 
         if(!collisions.hasNext()) {
@@ -1187,7 +1196,7 @@ public class Agent {
         return true;
     }
 
-    private boolean wouldCollideAt(WorldView world, BlockPos pos) {
+    private boolean wouldCollideAt(World world, BlockPos pos) {
         Box box2 = new Box(pos.getX(), this.box.minY, pos.getZ(),
             (double)pos.getX() + 1.0D, this.box.maxY, (double)pos.getZ() + 1.0D).contract(1.0E-7);
         return this.canCollide(world, box2);
@@ -1215,9 +1224,33 @@ public class Agent {
         return !this.firstUpdate && this.fluidHeight.getDouble(FluidTags.LAVA) > 0.0D;
     }
 
+    public Vec3d getRotationVector() {
+        float f = pitch * 0.017453292F;
+        float g = -yaw * 0.017453292F;
+        float h = MathHelper.cos(g);
+        float i = MathHelper.sin(g);
+        float j = MathHelper.cos(f);
+        float k = MathHelper.sin(f);
+        return new Vec3d(i * j, -k, h * j);
+    }
+
+    public Vec3d getEyePos() {
+        return new Vec3d(posX, this.getEyeY(), posZ);
+    }
+
+    public void lookAt(Vec3d target) {
+        Vec3d vec3d = getEyePos();
+        double d = target.x - vec3d.x;
+        double e = target.y - vec3d.y;
+        double f = target.z - vec3d.z;
+        double g = Math.sqrt(d * d + f * f);
+        pitch = MathHelper.wrapDegrees((float)(-(MathHelper.atan2(e, g) * 57.2957763671875)));
+        yaw = MathHelper.wrapDegrees((float)(MathHelper.atan2(f, d) * 57.2957763671875) - 90.0F);
+    }
+
     /*
 
-    public void tickCramming(WorldView world) {
+    public void tickCramming(World world) {
         List<Entity> list = world.getOtherEntities(this, this.box, EntityPredicates.canBePushedBy(this));
 
         if(!list.isEmpty()) {
@@ -1486,7 +1519,7 @@ public class Agent {
         return agent;
     }
 
-    public static Agent of(Agent other, boolean forward, boolean back, boolean left, boolean right, boolean jump, boolean sneak, boolean sprint, float pitch, float yaw) {
+    public static Agent of(Agent other, boolean forward, boolean back, boolean left, boolean right, boolean jump, boolean sneak, boolean sprint, float pitch, float yaw, BlockPos placedBlock) {
         Agent agent = new Agent();
         agent.keyForward = forward;
         agent.keyBack = back;
@@ -1556,12 +1589,20 @@ public class Agent {
         agent.movementSpeed = other.movementSpeed;
         agent.airStrafingSpeed = other.airStrafingSpeed;
         agent.jumpingCooldown = other.jumpingCooldown;
+
+        if (other.placedBLocks != null) agent.placedBLocks = (HashMap<BlockPos, BlockState>) other.placedBLocks.clone();
+        if (placedBlock != null) {
+            if (agent.placedBLocks == null) agent.placedBLocks = new HashMap<>(1);
+
+            //TODO I need blockstate fuck fuck shit fuck fuck fuck
+            agent.placedBLocks.put(placedBlock, Blocks.DIAMOND_BLOCK.getDefaultState());
+        }
         //TODO: frame.ticksToNextAutojump
         return agent;
     }
 
     public static Agent of(Agent agent, PathInput input) {
-        return of(agent, input.forward, input.back, input.left, input.right, input.jump, input.sneak, input.sprint, input.pitch, input.yaw);
+        return of(agent, input.forward, input.back, input.left, input.right, input.jump, input.sneak, input.sprint, input.pitch, input.yaw, input.placedBlock);
     }
 
 }

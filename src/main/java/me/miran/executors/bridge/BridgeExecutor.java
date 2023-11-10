@@ -7,10 +7,16 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PickFromInventoryC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
 
 import static me.miran.Util.itemIntoBlockMap;
@@ -66,10 +72,20 @@ public abstract class BridgeExecutor extends InputExecutor {
 
     protected abstract void tickBridge(ClientPlayerEntity player, GameOptions options);
 
-    protected final void placeBlock() {
+    public static void placeBlock() {
         KeyBindingAccessor keyBinding = (KeyBindingAccessor) MinecraftClient.getInstance().options.useKey;
 
         KeyBinding.onKeyPressed(keyBinding.getBoundKey());
+
+
+        /*PlayerEntity player = MinecraftClient.getInstance().player;
+        HitResult r = player.raycast(4, 0, false);
+        if (r == null || r.getType() != HitResult.Type.BLOCK) return;
+
+        PlayerInteractBlockC2SPacket packet = new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, (BlockHitResult) r, 0);
+
+
+        MinecraftClient.getInstance().getNetworkHandler().sendPacket(packet);*/
     }
 
     @Override

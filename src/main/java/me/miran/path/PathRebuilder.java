@@ -8,6 +8,7 @@ import me.miran.render.Color;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ public class PathRebuilder {
 
     private static boolean running = false;
 
-    public static void calculateContinuedPathWithMismatch(WorldView world, final List<Node> path, int tick, PathExecutor pathExecutor) {
+    public static void calculateContinuedPathWithMismatch(World world, final List<Node> path, int tick, PathExecutor pathExecutor) {
         if (running) return;
         running = true;
 
