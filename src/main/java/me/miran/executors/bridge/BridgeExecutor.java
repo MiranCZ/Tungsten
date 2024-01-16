@@ -1,5 +1,6 @@
 package me.miran.executors.bridge;
 
+import me.miran.Util;
 import me.miran.executors.InputExecutor;
 import me.miran.mixin.minecraft.KeyBindingAccessor;
 import net.minecraft.block.Block;
@@ -18,8 +19,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
-
-import static me.miran.Util.itemIntoBlockMap;
 
 public abstract class BridgeExecutor extends InputExecutor {
 
@@ -47,7 +46,7 @@ public abstract class BridgeExecutor extends InputExecutor {
         ItemStack buildStack = null;
 
         for (ItemStack stack : inv.main) {
-            Block block = itemIntoBlockMap.get(stack.getItem());
+            Block block = Util.asBlock(stack.getItem());
             if (block == null) continue;
 
             if (block.getDefaultState().isFullCube(player.getWorld(),player.getBlockPos())) {
