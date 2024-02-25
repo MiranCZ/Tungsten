@@ -1,3 +1,7 @@
+I no longer feel motivated to work on this project. Adding features like block breaking and placing just seems like too big of a task for me 😅. I decided to leave this repo public in the case someone would find by spaghetti code useful xd. 
+- Miran
+
+
 # ABOUT
 This repository is for a Minecraft pathfinding bot. It builds upon and improves [this](https://github.com/KaptainWutax/tungsten) GitHub repository by KaptainWutax.
 
